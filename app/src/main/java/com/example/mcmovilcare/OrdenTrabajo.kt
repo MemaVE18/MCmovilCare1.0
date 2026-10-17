@@ -7,5 +7,6 @@ data class OrdenTrabajo(
     val estado: String,             // "En diagnóstico", "Pendiente de autorización", "Listo"
     val diagnostico: String?,
     val cotizacionMonto: Double?,   // LLEVA '?' porque al inicio puede no haber cotización
-    val requiereAutorizacion: Boolean
+    val requiereAutorizacion: Boolean,
+    val fechaIngreso: String
 )
