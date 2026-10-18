@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("com.google.devtools.ksp") version "1.9.24-1.0.20"
 }
 
 android {
@@ -33,7 +34,6 @@ android {
     }
 
     composeOptions {
-        // Actualizado a 1.5.14 para ser completamente compatible con Kotlin 1.9.24
         kotlinCompilerExtensionVersion = "1.5.14"
     }
 
@@ -72,11 +72,11 @@ dependencies {
     // ML Kit
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
 
-    // Room Database
+    // Room Database con KSP
     val roomVersion = "2.6.1"
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
-    annotationProcessor("androidx.room:room-compiler:$roomVersion")
+    "ksp"("androidx.room:room-compiler:$roomVersion")
 
     // Tests
     testImplementation(libs.junit)

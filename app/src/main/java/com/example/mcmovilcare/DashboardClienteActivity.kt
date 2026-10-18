@@ -1,6 +1,8 @@
 package com.example.mcmovilcare
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -9,7 +11,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-// Definition de la data class para asegurar que reconozca todas las propiedades
+// Definición de la data class para asegurar que reconozca todas las propiedades
 data class OrdenTrabajo(
     val id: String,
     val equipoModelo: String,
@@ -40,12 +42,12 @@ class DashboardClienteActivity : AppCompatActivity() {
             OrdenTrabajo("3", "iPhone 13", "SN789", "Listo", "Cambio de bateria", 45000.0, false, "15-10-2026")
         )
 
-        // 2. Configurar el RecyclerView con el clic real
+        // 2. Configurar el RecyclerView con el clic real al Detalle
         val rvOrdenes = findViewById<RecyclerView>(R.id.rvOrdenes)
         rvOrdenes.layoutManager = LinearLayoutManager(this)
         rvOrdenes.adapter = OrdenAdapter(mockOrdenes) { ordenSeleccionada ->
 
-            val intent = android.content.Intent(this, DetalleOrdenActivity::class.java).apply {
+            val intent = Intent(this, DetalleOrdenActivity::class.java).apply {
                 putExtra("EXTRA_ID", ordenSeleccionada.id)
                 putExtra("EXTRA_EQUIPO", ordenSeleccionada.equipoModelo)
                 putExtra("EXTRA_SERIE", ordenSeleccionada.numeroSerie)
@@ -62,7 +64,14 @@ class DashboardClienteActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // 3. Configurar el boton de salir
+        // 3. Botón Escáner QR (Apunta a NuevoEquipoActivity que contiene ScanQrScreen)
+        val btnEscanearQR = findViewById<Button>(R.id.btnEscanearQR)
+        btnEscanearQR.setOnClickListener {
+            val intent = Intent(this, NuevoEquipoActivity::class.java)
+            startActivity(intent)
+        }
+
+        // 4. Configurar el botón de salir
         val tvLogout = findViewById<TextView>(R.id.tvLogout)
         tvLogout.setOnClickListener {
             finish()
