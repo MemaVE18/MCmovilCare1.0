@@ -2,8 +2,10 @@ package com.example.mcmovilcare
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -35,6 +37,7 @@ class MainActivity : AppCompatActivity() {
         val etEmail = findViewById<EditText>(R.id.etCorreo)
         val etPassword = findViewById<EditText>(R.id.etContrasena)
         val btnLogin = findViewById<Button>(R.id.btnIngresar)
+        val progressBarLogin = findViewById<ProgressBar>(R.id.progressBarLogin)
 
         // Inicialización de Room Database
         db = Room.databaseBuilder(
@@ -45,7 +48,7 @@ class MainActivity : AppCompatActivity() {
             .fallbackToDestructiveMigration()
             .build()
 
-        // Evento de Login con simulación integrada
+        // Evento de Login con animación de carga y corrutina
         btnLogin.setOnClickListener {
             val email = etEmail.text.toString().trim().lowercase()
 
@@ -53,6 +56,10 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Ingresa un correo válido", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+
+            // Mostrar el loader y deshabilitar el botón mientras valida
+            progressBarLogin.visibility = View.VISIBLE
+            btnLogin.isEnabled = false
 
             lifecycleScope.launch(Dispatchers.IO) {
                 val usuarioDao = db.usuarioDao()
@@ -68,6 +75,9 @@ class MainActivity : AppCompatActivity() {
                         } else if (email.contains("cliente")) {
                             redireccionarPorRol("CLIENTE")
                         } else {
+                            // Ocultar loader y rehabilitar botón si falla la validación
+                            progressBarLogin.visibility = View.GONE
+                            btnLogin.isEnabled = true
                             Toast.makeText(this@MainActivity, "Usuario no encontrado", Toast.LENGTH_SHORT).show()
                         }
                     }
@@ -89,6 +99,10 @@ class MainActivity : AppCompatActivity() {
             else -> Intent(this, DashboardClienteActivity::class.java)
         }
         startActivity(intent)
+
+        // Aplicar la transición suave entre pantallas
+        overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
+
         finish()
     }
 }
