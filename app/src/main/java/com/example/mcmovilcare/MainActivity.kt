@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -30,7 +31,7 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // Referencias UI de tu XML
+        // Referencias UI
         val etEmail = findViewById<EditText>(R.id.etCorreo)
         val etPassword = findViewById<EditText>(R.id.etContrasena)
         val btnLogin = findViewById<Button>(R.id.btnIngresar)
@@ -44,14 +45,12 @@ class MainActivity : AppCompatActivity() {
             .fallbackToDestructiveMigration()
             .build()
 
-        // Evento de Login
+        // Evento de Login con simulación integrada
         btnLogin.setOnClickListener {
-            val email = etEmail.text.toString().trim()
+            val email = etEmail.text.toString().trim().lowercase()
 
             if (email.isEmpty()) {
-                val intent = Intent(this@MainActivity, DashboardClienteActivity::class.java)
-                startActivity(intent)
-                finish()
+                Toast.makeText(this, "Ingresa un correo válido", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -61,12 +60,16 @@ class MainActivity : AppCompatActivity() {
 
                 withContext(Dispatchers.Main) {
                     if (usuario != null) {
-                        // Pasamos el Enum convertido a String mediante .name
-                        redireccionarPorRol(usuario.rol.name)
+                        redireccionarPorRol(usuario.rol.toString())
                     } else {
-                        val intent = Intent(this@MainActivity, DashboardClienteActivity::class.java)
-                        startActivity(intent)
-                        finish()
+                        // Fallback/Simulación para pruebas cuando la BD está vacía
+                        if (email.contains("tecnico")) {
+                            redireccionarPorRol("TECNICO")
+                        } else if (email.contains("cliente")) {
+                            redireccionarPorRol("CLIENTE")
+                        } else {
+                            Toast.makeText(this@MainActivity, "Usuario no encontrado", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
@@ -75,7 +78,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun redireccionarPorRol(rolNombre: String) {
         val intent = when (rolNombre.uppercase()) {
-            "CLIENTE", "TECNICO", "ADMIN" -> Intent(this, DashboardClienteActivity::class.java)
+            "TECNICO", "ADMIN" -> {
+                Toast.makeText(this, "Bienvenido Técnico", Toast.LENGTH_SHORT).show()
+                Intent(this, NuevoEquipoActivity::class.java)
+            }
+            "CLIENTE" -> {
+                Toast.makeText(this, "Bienvenido Cliente", Toast.LENGTH_SHORT).show()
+                Intent(this, DashboardClienteActivity::class.java)
+            }
             else -> Intent(this, DashboardClienteActivity::class.java)
         }
         startActivity(intent)

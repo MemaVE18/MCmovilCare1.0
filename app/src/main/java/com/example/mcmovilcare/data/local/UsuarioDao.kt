@@ -18,4 +18,6 @@ interface UsuarioDao {
 
     @Query("SELECT * FROM usuario")
     fun obtenerTodosLosUsuarios(): Flow<List<Usuario>>
+
+
 }
