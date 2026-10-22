@@ -8,10 +8,16 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.room.Room
+import com.example.mcmovilcare.util.NotificacionHelper
+import com.example.mcmovilcare.repository.AppRepository
+import com.example.mcmovilcare.viewmodel.OrdenTrabajoViewModel
+import com.example.mcmovilcare.data.local.AppDatabase
 
-// Definición de la data class para asegurar que reconozca todas las propiedades
+// Definicion de la data class local
 data class OrdenTrabajo(
     val id: String,
     val equipoModelo: String,
@@ -35,18 +41,17 @@ class DashboardClienteActivity : AppCompatActivity() {
             insets
         }
 
-        // 1. Datos tipo ejemplo para simular el mockup
+        // 1. Datos de prueba
         val mockOrdenes = listOf(
             OrdenTrabajo("1", "Samsung Galaxy S22", "SN123", "En diagnostico", null, null, false, "10-10-2026"),
             OrdenTrabajo("2", "MacBook Pro M1", "SN456", "Pend. autorizacion", "Pantalla rota", 150000.0, true, "12-10-2026"),
             OrdenTrabajo("3", "iPhone 13", "SN789", "Listo", "Cambio de bateria", 45000.0, false, "15-10-2026")
         )
 
-        // 2. Configurar el RecyclerView con el clic real al Detalle
+        // 2. Configurar el RecyclerView
         val rvOrdenes = findViewById<RecyclerView>(R.id.rvOrdenes)
         rvOrdenes.layoutManager = LinearLayoutManager(this)
         rvOrdenes.adapter = OrdenAdapter(mockOrdenes) { ordenSeleccionada ->
-
             val intent = Intent(this, DetalleOrdenActivity::class.java).apply {
                 putExtra("EXTRA_ID", ordenSeleccionada.id)
                 putExtra("EXTRA_EQUIPO", ordenSeleccionada.equipoModelo)
@@ -64,17 +69,49 @@ class DashboardClienteActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // 3. Botón Escáner QR (Apunta a NuevoEquipoActivity que contiene ScanQrScreen)
+        // 3. Boton Escaner QR
         val btnEscanearQR = findViewById<Button>(R.id.btnEscanearQR)
         btnEscanearQR.setOnClickListener {
             val intent = Intent(this, NuevoEquipoActivity::class.java)
             startActivity(intent)
         }
 
-        // 4. Configurar el botón de salir
+        // 4. Configurar el boton de salir
         val tvLogout = findViewById<TextView>(R.id.tvLogout)
         tvLogout.setOnClickListener {
             finish()
         }
+
+        // 5. Probar notificacion
+        NotificacionHelper.enviarNotificacion(
+            this,
+            "MCmovilCare",
+            "Tu equipo Samsung Galaxy S22 cambio a estado: Listo"
+        )
+
+        // 6. Inicializacion correcta construyendo Room directamente
+        val factory = object : ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                // Creamos la base de datos directo con el builder de Room
+                val database = Room.databaseBuilder(
+                    applicationContext,
+                    AppDatabase::class.java,
+                    "mcmovilcare_db"
+                ).fallbackToDestructiveMigration().build()
+
+                // Pasamos los DAOs
+                val repository = AppRepository(
+                    database.usuarioDao(),
+                    database.equipoDao(),
+                    database.ordenTrabajoDao()
+                )
+
+                return OrdenTrabajoViewModel(repository) as T
+            }
+        }
+
+        val viewModel = ViewModelProvider(this, factory)[OrdenTrabajoViewModel::class.java]
+
+        viewModel.cargarEquiposDesdeApi()
     }
 }
