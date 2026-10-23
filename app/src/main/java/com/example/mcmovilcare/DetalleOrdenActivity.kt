@@ -26,7 +26,10 @@ class DetalleOrdenActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_detalle_orden)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.btnVolver)) { v, insets ->
+
+        // CORRECCIÓN: Aplicar insets al layout principal para evitar que btnVolver se aplaste
+        val rootView = findViewById<View>(android.R.id.content)
+        ViewCompat.setOnApplyWindowInsetsListener(rootView) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
@@ -149,7 +152,7 @@ class DetalleOrdenActivity : AppCompatActivity() {
             val pdfGenerator = PdfGenerator()
             pdfGenerator.generarPdfOrden(
                 this,
-                "Orden #$id - Equipo: $equipo - ${tvEstado.text}"
+                "Orden #$id\nEquipo: $equipo\n${tvEstado.text}"
             )
         }
 
