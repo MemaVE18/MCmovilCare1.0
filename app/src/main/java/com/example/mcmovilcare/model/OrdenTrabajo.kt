@@ -12,5 +12,8 @@ data class OrdenTrabajo(
     val diagnostico: String? = null,
     val cotizacionMonto: Double? = null,
     val requiereAutorizacion: Boolean = false,
-    val fechaIngreso: String
+    val fechaIngreso: String,
+    val garantia: String? = "Garantia 90 dias vigente",
+    val proximaMantencion: String? = "15-04-2027",
+    val evidencia: String? = "Equipo ingresado sin danos adicionales en carcasa"
 )
