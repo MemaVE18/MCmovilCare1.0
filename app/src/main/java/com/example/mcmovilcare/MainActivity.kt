@@ -1,6 +1,7 @@
 package com.example.mcmovilcare
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -27,7 +28,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var db: AppDatabase
 
-    // Launcher para pedir el permiso de notificaciones en Android 13+
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (!isGranted) {
@@ -41,6 +41,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Verificar si ya hay una sesión activa antes de cargar la vista
+        val sharedPreferences = getSharedPreferences("MisPreferenciasApp", Context.MODE_PRIVATE)
+        if (sharedPreferences.getBoolean("isLoggedIn", false)) {
+            val rolGuardado = sharedPreferences.getString("rol", "CLIENTE") ?: "CLIENTE"
+            ejecutarRedireccion(rolGuardado)
+            return // Salimos del onCreate para no cargar la UI del login
+        }
+
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
@@ -50,16 +59,13 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // Solicitar el permiso de notificaciones al iniciar la app
         verificarYPedirPermisoNotificaciones()
 
-        // Referencias UI
         val etEmail = findViewById<EditText>(R.id.etCorreo)
-        val etPassword = findViewById<EditText>(R.id.etContrasena)
+        val etPassword = findViewById<EditText>(R.id.etContrasena) // Faltaba validar contraseña, pero lo dejamos como tu base
         val btnLogin = findViewById<Button>(R.id.btnIngresar)
         val progressBarLogin = findViewById<ProgressBar>(R.id.progressBarLogin)
 
-        // Inicializacion de Room Database
         db = Room.databaseBuilder(
             applicationContext,
             AppDatabase::class.java,
@@ -68,7 +74,6 @@ class MainActivity : AppCompatActivity() {
             .fallbackToDestructiveMigration()
             .build()
 
-        // Evento de Login con animacion de carga y corrutina
         btnLogin.setOnClickListener {
             val email = etEmail.text.toString().trim().lowercase()
 
@@ -77,7 +82,6 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Mostrar el loader y deshabilitar el boton mientras valida
             progressBarLogin.visibility = View.VISIBLE
             btnLogin.isEnabled = false
 
@@ -89,7 +93,6 @@ class MainActivity : AppCompatActivity() {
                     if (usuario != null) {
                         redireccionarPorRol(usuario.rol.toString())
                     } else {
-                        // Fallback y simulacion para pruebas cuando la BD esta vacia
                         if (email.contains("tecnico")) {
                             redireccionarPorRol("TECNICO")
                         } else if (email.contains("admin")) {
@@ -97,7 +100,6 @@ class MainActivity : AppCompatActivity() {
                         } else if (email.contains("cliente")) {
                             redireccionarPorRol("CLIENTE")
                         } else {
-                            // Ocultar loader y rehabilitar boton si falla la validacion
                             progressBarLogin.visibility = View.GONE
                             btnLogin.isEnabled = true
                             Toast.makeText(
@@ -125,26 +127,49 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun redireccionarPorRol(rolNombre: String) {
-        // Rehabilitar boton y ocultar loader antes de navegar
-        findViewById<ProgressBar>(R.id.progressBarLogin).visibility = View.GONE
-        findViewById<Button>(R.id.btnIngresar).isEnabled = true
+        val progressBar = findViewById<ProgressBar>(R.id.progressBarLogin)
+        val btnIngresar = findViewById<Button>(R.id.btnIngresar)
 
-        val intent = when (rolNombre.uppercase()) {
-            "TECNICO", "ADMIN" -> {
-                Toast.makeText(this, "Bienvenido $rolNombre", Toast.LENGTH_SHORT).show()
+        if (progressBar != null) progressBar.visibility = View.GONE
+        if (btnIngresar != null) btnIngresar.isEnabled = true
+
+        // 1. Guardar la sesión localmente
+        val sharedPreferences = getSharedPreferences("MisPreferenciasApp", Context.MODE_PRIVATE)
+        sharedPreferences.edit().apply {
+            putBoolean("isLoggedIn", true)
+            putString("rol", rolNombre.uppercase())
+            apply()
+        }
+
+        // 2. Ejecutar la navegación
+        ejecutarRedireccion(rolNombre.uppercase())
+    }
+
+    private fun ejecutarRedireccion(rolNombre: String) {
+        val intent = when (rolNombre) {
+            "ADMIN" -> {
+                Toast.makeText(this, "Bienvenido Administrador", Toast.LENGTH_SHORT).show()
                 Intent(this, HistorialActivity::class.java).apply {
-                    putExtra("EXTRA_ROL", rolNombre.uppercase())
+                    putExtra("EXTRA_ROL", "ADMIN")
+                }
+            }
+            "TECNICO" -> {
+                Toast.makeText(this, "Bienvenido Tecnico", Toast.LENGTH_SHORT).show()
+                Intent(this, HistorialActivity::class.java).apply {
+                    putExtra("EXTRA_ROL", rolNombre)
                 }
             }
             "CLIENTE" -> {
                 Toast.makeText(this, "Bienvenido Cliente", Toast.LENGTH_SHORT).show()
                 Intent(this, DashboardClienteActivity::class.java)
             }
-            else -> Intent(this, DashboardClienteActivity::class.java)
+            else -> {
+                Intent(this, DashboardClienteActivity::class.java)
+            }
         }
-        startActivity(intent)
 
-        // Aplicar la transicion suave entre pantallas
+        startActivity(intent)
         overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
+        finish() // Cierra el login para que el botón atrás no regrese aquí
     }
 }

@@ -44,7 +44,10 @@ class DashboardClienteActivity : AppCompatActivity() {
             applicationContext,
             AppDatabase::class.java,
             "mcmovilcare_db"
-        ).fallbackToDestructiveMigration().build()
+        )
+            .enableMultiInstanceInvalidation() // Sincroniza listas entre pantallas
+            .fallbackToDestructiveMigration()
+            .build()
 
         val repository = AppRepository(
             database.usuarioDao(),
@@ -99,6 +102,14 @@ class DashboardClienteActivity : AppCompatActivity() {
         // Configurar el boton de salir
         val tvLogout = findViewById<TextView>(R.id.tvLogout)
         tvLogout.setOnClickListener {
+            // Limpiar las preferencias guardadas
+            val sharedPreferences = getSharedPreferences("MisPreferenciasApp", android.content.Context.MODE_PRIVATE)
+            sharedPreferences.edit().clear().apply()
+
+            val intent = android.content.Intent(this, MainActivity::class.java)
+            // Matar el historial por completo
+            intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
             finish()
         }
 

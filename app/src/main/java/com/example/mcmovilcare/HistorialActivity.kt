@@ -37,7 +37,10 @@ class HistorialActivity : ComponentActivity() {
             applicationContext,
             AppDatabase::class.java,
             "mcmovilcare_db"
-        ).fallbackToDestructiveMigration().build()
+        )
+            .enableMultiInstanceInvalidation() // Sincroniza listas entre pantallas
+            .fallbackToDestructiveMigration()
+            .build()
 
         // Sembrar datos iniciales si aun no existen
         lifecycleScope.launch(Dispatchers.IO) {
@@ -50,6 +53,17 @@ class HistorialActivity : ComponentActivity() {
                 )
                 mockOrdenes.forEach { database.ordenTrabajoDao().insertarOrden(it) }
             }
+        }
+
+        // Lógica unificada para cerrar sesión borrando los datos
+        val ejecutarCierreSesion: () -> Unit = {
+            val sharedPreferences = getSharedPreferences("MisPreferenciasApp", android.content.Context.MODE_PRIVATE)
+            sharedPreferences.edit().clear().apply()
+
+            val intent = Intent(this@HistorialActivity, MainActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
         }
 
         setContent {
@@ -75,7 +89,7 @@ class HistorialActivity : ComponentActivity() {
                                 }
                             }
                         },
-                        onCerrarSesion = { finish() }
+                        onCerrarSesion = ejecutarCierreSesion
                     )
                 } else {
                     PanelTecnicoScreen(
@@ -103,7 +117,7 @@ class HistorialActivity : ComponentActivity() {
                         onAbrirEscaner = {
                             startActivity(Intent(this@HistorialActivity, NuevoEquipoActivity::class.java))
                         },
-                        onCerrarSesion = { finish() }
+                        onCerrarSesion = ejecutarCierreSesion
                     )
                 }
             }
@@ -128,7 +142,7 @@ fun PanelTecnicoScreen(
         ) {
             Text("Panel Tecnico - Ordenes", style = MaterialTheme.typography.titleLarge)
             TextButton(onClick = onCerrarSesion) {
-                Text("Salir", color = MaterialTheme.colorScheme.error)
+                Text("Cerrar Sesión", color = MaterialTheme.colorScheme.error)
             }
         }
 
@@ -251,7 +265,7 @@ fun PanelAdminScreen(
             ) {
                 Text("Panel Administrador", style = MaterialTheme.typography.titleLarge)
                 TextButton(onClick = onCerrarSesion) {
-                    Text("Salir", color = MaterialTheme.colorScheme.error)
+                    Text("Cerrar Sesión", color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -319,7 +333,7 @@ fun PanelAdminScreen(
         items(usuarios) { u ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("${u.nombre} - ${u.rol}", style = MaterialTheme.typography.bodyLarge)
+                    Text("${u.nombre}\n${u.rol}", style = MaterialTheme.typography.bodyLarge)
                     Text(u.correo, style = MaterialTheme.typography.bodySmall)
                 }
             }
@@ -332,7 +346,7 @@ fun PanelAdminScreen(
         items(ordenes) { o ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Orden #${o.id} - ${o.equipoModelo}", style = MaterialTheme.typography.titleSmall)
+                    Text("Orden #${o.id}\n${o.equipoModelo}", style = MaterialTheme.typography.titleSmall)
                     Text("Estado: ${o.estado} | S/N: ${o.numeroSerie}")
                 }
             }
