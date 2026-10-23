@@ -13,7 +13,6 @@ class AppRepository(
     private val equipoDao: EquipoDao,
     private val ordenTrabajoDao: OrdenTrabajoDao
 ) {
-    // --- Operaciones de Usuario ---
     val obtenerUsuarios: Flow<List<Usuario>> get() = usuarioDao.obtenerTodosLosUsuarios()
 
     fun obtenerUsuario(id: String): Flow<Usuario?> = usuarioDao.obtenerUsuarioPorId(id)
@@ -22,14 +21,12 @@ class AppRepository(
         usuarioDao.insertarUsuario(usuario)
     }
 
-    // --- Operaciones de Equipos ---
     val obtenerEquipos: Flow<List<Equipo>> = equipoDao.obtenerEquipos()
 
     suspend fun guardarEquipo(equipo: Equipo) {
         equipoDao.insertarEquipo(equipo)
     }
 
-    // --- Operaciones de Órdenes de Trabajo ---
     val obtenerOrdenes: Flow<List<OrdenTrabajo>> = ordenTrabajoDao.obtenerOrdenes()
 
     suspend fun guardarOrden(orden: OrdenTrabajo) {

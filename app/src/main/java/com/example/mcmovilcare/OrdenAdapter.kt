@@ -32,7 +32,7 @@ class OrdenAdapter(
         holder.tvSerie.text = "S/N: ${orden.numeroSerie}"
         holder.tvDiagnostico.text = orden.diagnostico ?: "Sin diagnostico registrado aun."
 
-        // Logica para mostrar u ocultar el costo
+
         if (orden.cotizacionMonto != null) {
             holder.tvMonto.visibility = View.VISIBLE
             holder.tvMonto.text = "$${orden.cotizacionMonto}"

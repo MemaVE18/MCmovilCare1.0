@@ -49,7 +49,6 @@
         app:layout_constraintTop_toBottomOf="@id/tvWelcome"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- Aquí se mostrará la lista de equipos en reparación -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvOrdenes"
         android:layout_width="0dp"

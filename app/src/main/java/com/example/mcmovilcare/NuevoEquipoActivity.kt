@@ -38,13 +38,12 @@ class NuevoEquipoActivity : ComponentActivity() {
             AppDatabase::class.java,
             "mcmovilcare_db"
         )
-            .enableMultiInstanceInvalidation() // Sincroniza listas entre pantallas
+            .enableMultiInstanceInvalidation()
             .fallbackToDestructiveMigration()
             .build()
 
         setContent {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Botón Volver agregado en la parte superior
                 Button(
                     onClick = { finish() },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5E4B8B)),
@@ -53,7 +52,6 @@ class NuevoEquipoActivity : ComponentActivity() {
                     Text("< Volver", color = Color.White)
                 }
 
-                // Contenedor para la pantalla original de registro
                 Box(modifier = Modifier.weight(1f)) {
                     NuevoEquipoScreen(
                         onAbrirEscaner = { onCodigoLeido ->
@@ -65,7 +63,6 @@ class NuevoEquipoActivity : ComponentActivity() {
                             lifecycleScope.launch(Dispatchers.IO) {
                                 val nuevoId = UUID.randomUUID().toString().take(5)
 
-                                // 1. Guardar el equipo en Room
                                 val nuevoEquipo = Equipo(
                                     id = nuevoId,
                                     clienteId = "cliente_1",
@@ -76,7 +73,6 @@ class NuevoEquipoActivity : ComponentActivity() {
                                 )
                                 database.equipoDao().insertarEquipo(nuevoEquipo)
 
-                                // 2. Generar la solicitud / orden de trabajo inicial en Room
                                 val nuevaOrden = OrdenTrabajo(
                                     id = nuevoId,
                                     equipoModelo = "$marcaNombre $modelo".trim(),

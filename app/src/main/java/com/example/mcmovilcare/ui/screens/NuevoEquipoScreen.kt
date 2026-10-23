@@ -41,7 +41,7 @@ fun NuevoEquipoScreen(
         Button(
             onClick = {
                 onAbrirEscaner { codigoLeido ->
-                    codigoEquipo = codigoLeido // Asigna el código escaneado al campo de texto
+                    codigoEquipo = codigoLeido
                 }
             },
             modifier = Modifier.fillMaxWidth()
