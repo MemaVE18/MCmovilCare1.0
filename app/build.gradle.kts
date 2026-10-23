@@ -86,4 +86,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+
+    // Dependencia nav
+    implementation("androidx.navigation:navigation-compose:2.7.7")
 }

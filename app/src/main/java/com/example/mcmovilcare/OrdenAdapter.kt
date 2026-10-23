@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.example.mcmovilcare.model.OrdenTrabajo
 
 class OrdenAdapter(
     private val listaOrdenes: List<OrdenTrabajo>,
@@ -29,7 +30,6 @@ class OrdenAdapter(
         holder.tvEquipo.text = orden.equipoModelo
         holder.tvEstado.text = orden.estado
         holder.tvSerie.text = "S/N: ${orden.numeroSerie}"
-
         holder.tvDiagnostico.text = orden.diagnostico ?: "Sin diagnostico registrado aun."
 
         // Logica para mostrar u ocultar el costo
