@@ -38,11 +38,15 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- LÍNEA AGREGADA: Registra la actividad para el perfil técnico -->
+        <!-- LINEA AGREGADA: Registra la actividad para el perfil tecnico -->
         <activity
             android:name=".NuevoEquipoActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".DashboardAdminActivity"
+            android:exported="false" />
 
     </application>
 

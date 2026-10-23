@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Panel de Administrador"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp"/>
+
+    <Button
+        android:id="@+id/btnGestionarUsuarios"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Gestion de Perfiles"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnSupervisarOrdenes"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Supervision de Ordenes"
+        android:layout_marginBottom="32dp"/>
+
+    <TextView
+        android:id="@+id/tvLogoutAdmin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cerrar Sesion"
+        android:textColor="#FF0000"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:padding="8dp"/>
+</LinearLayout>
