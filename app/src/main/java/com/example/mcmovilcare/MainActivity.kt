@@ -42,12 +42,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Verificar si ya hay una sesión activa antes de cargar la vista
         val sharedPreferences = getSharedPreferences("MisPreferenciasApp", Context.MODE_PRIVATE)
         if (sharedPreferences.getBoolean("isLoggedIn", false)) {
             val rolGuardado = sharedPreferences.getString("rol", "CLIENTE") ?: "CLIENTE"
             ejecutarRedireccion(rolGuardado)
-            return // Salimos del onCreate para no cargar la UI del login
+            return
         }
 
         enableEdgeToEdge()
@@ -62,7 +61,7 @@ class MainActivity : AppCompatActivity() {
         verificarYPedirPermisoNotificaciones()
 
         val etEmail = findViewById<EditText>(R.id.etCorreo)
-        val etPassword = findViewById<EditText>(R.id.etContrasena) // Faltaba validar contraseña, pero lo dejamos como tu base
+        val etPassword = findViewById<EditText>(R.id.etContrasena)
         val btnLogin = findViewById<Button>(R.id.btnIngresar)
         val progressBarLogin = findViewById<ProgressBar>(R.id.progressBarLogin)
 
@@ -141,7 +140,6 @@ class MainActivity : AppCompatActivity() {
             apply()
         }
 
-        // 2. Ejecutar la navegación
         ejecutarRedireccion(rolNombre.uppercase())
     }
 
@@ -170,6 +168,6 @@ class MainActivity : AppCompatActivity() {
 
         startActivity(intent)
         overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
-        finish() // Cierra el login para que el botón atrás no regrese aquí
+        finish()
     }
 }

@@ -38,11 +38,10 @@ class HistorialActivity : ComponentActivity() {
             AppDatabase::class.java,
             "mcmovilcare_db"
         )
-            .enableMultiInstanceInvalidation() // Sincroniza listas entre pantallas
+            .enableMultiInstanceInvalidation()
             .fallbackToDestructiveMigration()
             .build()
 
-        // Sembrar datos iniciales si aun no existen
         lifecycleScope.launch(Dispatchers.IO) {
             val ordenesActuales = database.ordenTrabajoDao().obtenerOrdenes().first()
             if (ordenesActuales.isEmpty()) {
@@ -55,7 +54,6 @@ class HistorialActivity : ComponentActivity() {
             }
         }
 
-        // Lógica unificada para cerrar sesión borrando los datos
         val ejecutarCierreSesion: () -> Unit = {
             val sharedPreferences = getSharedPreferences("MisPreferenciasApp", android.content.Context.MODE_PRIVATE)
             sharedPreferences.edit().clear().apply()
@@ -176,8 +174,6 @@ fun PanelTecnicoScreen(
             }
         }
     }
-
-    // Dialogo para que el tecnico edite la orden
     ordenSeleccionada?.let { orden ->
         var diag by remember { mutableStateOf(orden.diagnostico ?: "") }
         var montoTexto by remember { mutableStateOf(orden.cotizacionMonto?.toString() ?: "") }
@@ -269,8 +265,6 @@ fun PanelAdminScreen(
                 }
             }
         }
-
-        // 1. Crear perfiles
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -314,7 +308,6 @@ fun PanelAdminScreen(
             }
         }
 
-        // 2. Catalogo de servicios y repuestos
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -326,7 +319,6 @@ fun PanelAdminScreen(
             }
         }
 
-        // 3. Usuarios registrados
         item {
             Text("Perfiles en Base de Datos (${usuarios.size})", style = MaterialTheme.typography.titleMedium)
         }
@@ -339,7 +331,6 @@ fun PanelAdminScreen(
             }
         }
 
-        // 4. Supervision de ordenes
         item {
             Text("Supervision de Ordenes (${ordenes.size})", style = MaterialTheme.typography.titleMedium)
         }

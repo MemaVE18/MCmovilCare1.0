@@ -11,17 +11,11 @@ class DashboardAdminActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dashboard_admin)
 
-        // Boton para gestionar usuarios
         findViewById<Button>(R.id.btnGestionarUsuarios).setOnClickListener {
-            // Logica para abrir pantalla de gestion de perfiles
         }
-
-        // Boton para supervision de ordenes
         findViewById<Button>(R.id.btnSupervisarOrdenes).setOnClickListener {
-            // Logica para ver todas las ordenes del sistema
         }
 
-        // Cierre de sesion del admin
         findViewById<TextView>(R.id.tvLogoutAdmin).setOnClickListener {
             cerrarSesion()
         }

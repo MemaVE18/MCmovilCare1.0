@@ -27,7 +27,6 @@ class DetalleOrdenActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_detalle_orden)
 
-        // CORRECCIÓN: Aplicar insets al layout principal para evitar que btnVolver se aplaste
         val rootView = findViewById<View>(android.R.id.content)
         ViewCompat.setOnApplyWindowInsetsListener(rootView) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -35,7 +34,6 @@ class DetalleOrdenActivity : AppCompatActivity() {
             insets
         }
 
-        // Inicializar Room y ViewModel para aprobar o rechazar
         val database = Room.databaseBuilder(
             applicationContext,
             AppDatabase::class.java,
@@ -61,7 +59,6 @@ class DetalleOrdenActivity : AppCompatActivity() {
         }
         val viewModel = ViewModelProvider(this, factory)[OrdenTrabajoViewModel::class.java]
 
-        // Recuperar datos del Intent
         val id = intent.getStringExtra("EXTRA_ID") ?: "N/A"
         val equipo = intent.getStringExtra("EXTRA_EQUIPO") ?: "Equipo"
         val serie = intent.getStringExtra("EXTRA_SERIE") ?: "Sin serie"
@@ -74,14 +71,13 @@ class DetalleOrdenActivity : AppCompatActivity() {
         val mantencion = intent.getStringExtra("EXTRA_MANTENCION") ?: "15-04-2027"
         val evidencia = intent.getStringExtra("EXTRA_EVIDENCIA") ?: "Sin evidencias adjuntas"
 
-        // Referencias UI
+
         val tvEstado = findViewById<TextView>(R.id.tvDetalleEstado)
         val tvAutorizado = findViewById<TextView>(R.id.tvDetalleAutorizado)
         val layoutAprobacion = findViewById<LinearLayout>(R.id.layoutAprobacion)
         val btnAprobar = findViewById<Button>(R.id.btnAprobarOrden)
         val btnRechazar = findViewById<Button>(R.id.btnRechazarOrden)
 
-        // Mostrar los datos en la UI
         findViewById<TextView>(R.id.tvDetalleID).text = "ID Orden: $id"
         findViewById<TextView>(R.id.tvDetalleEquipo).text = equipo
         findViewById<TextView>(R.id.tvDetalleSerie).text = "S/N: $serie"
@@ -100,7 +96,6 @@ class DetalleOrdenActivity : AppCompatActivity() {
             tvCosto.setTextColor(Color.GRAY)
         }
 
-        // Logica de autorizacion de cotizacion
         if (requiereAutorizacion && estado != "Aprobado" && estado != "Rechazado") {
             tvAutorizado.text = "Cotizacion pendiente de tu autorizacion"
             tvAutorizado.setTextColor(Color.parseColor("#FF9800"))
@@ -115,7 +110,6 @@ class DetalleOrdenActivity : AppCompatActivity() {
             layoutAprobacion.visibility = View.GONE
         }
 
-        // Accion Aprobar Cotizacion
         btnAprobar.setOnClickListener {
             viewModel.aprobarOrden(id)
             tvEstado.text = "Estado: Aprobado"
@@ -130,7 +124,6 @@ class DetalleOrdenActivity : AppCompatActivity() {
             Toast.makeText(this, "Cotizacion aprobada con exito", Toast.LENGTH_SHORT).show()
         }
 
-        // Accion Rechazar Cotizacion
         btnRechazar.setOnClickListener {
             viewModel.rechazarOrden(id)
             tvEstado.text = "Estado: Rechazado"
@@ -140,14 +133,12 @@ class DetalleOrdenActivity : AppCompatActivity() {
             Toast.makeText(this, "Cotizacion rechazada", Toast.LENGTH_SHORT).show()
         }
 
-        // Disparar notificacion de consulta
         NotificacionHelper.enviarNotificacion(
             this,
             "Consulta de Orden #$id",
             "Estas revisando la orden del equipo $equipo."
         )
 
-        // Evento Boton PDF
         findViewById<Button>(R.id.btnGenerarPdf).setOnClickListener {
             val pdfGenerator = PdfGenerator()
             pdfGenerator.generarPdfOrden(
@@ -156,7 +147,6 @@ class DetalleOrdenActivity : AppCompatActivity() {
             )
         }
 
-        // Boton Volver
         findViewById<Button>(R.id.btnVolver).setOnClickListener {
             finish()
         }

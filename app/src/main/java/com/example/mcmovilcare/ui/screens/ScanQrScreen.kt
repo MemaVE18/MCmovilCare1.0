@@ -28,7 +28,6 @@ fun ScanQrScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Vista previa
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -47,7 +46,6 @@ fun ScanQrScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Entrada manual
         Text(
             text = "¿No puedes escanear? Ingrésalo manualmente:",
             style = MaterialTheme.typography.bodyMedium

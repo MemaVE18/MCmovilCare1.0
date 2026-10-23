@@ -26,10 +26,8 @@ fun SeccionBotonesAprobacion(
     onRechazar: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Estado local para alternar el color al hacer clic
     var presionado by remember { mutableStateOf(false) }
 
-    // Transición animada de color (Requisito Compose)
     val colorAnimado by animateColorAsState(
         targetValue = if (presionado) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
         animationSpec = tween(durationMillis = 400),
@@ -53,7 +51,6 @@ fun SeccionBotonesAprobacion(
             Text(text = "Rechazar")
         }
 
-        // Botón Aprobar con el efecto de color animado
         Button(
             onClick = {
                 presionado = !presionado

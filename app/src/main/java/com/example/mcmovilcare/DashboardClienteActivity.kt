@@ -39,14 +39,12 @@ class DashboardClienteActivity : AppCompatActivity() {
         val rvOrdenes = findViewById<RecyclerView>(R.id.rvOrdenes)
         rvOrdenes.layoutManager = LinearLayoutManager(this)
 
-        // Inicializar Room Database
         val database = Room.databaseBuilder(
             applicationContext,
             AppDatabase::class.java,
             "mcmovilcare_db"
         )
-            .enableMultiInstanceInvalidation() // Sincroniza listas entre pantallas
-            .fallbackToDestructiveMigration()
+            .enableMultiInstanceInvalidation()
             .build()
 
         val repository = AppRepository(
@@ -54,8 +52,6 @@ class DashboardClienteActivity : AppCompatActivity() {
             database.equipoDao(),
             database.ordenTrabajoDao()
         )
-
-        // Sembrar datos iniciales si la base de datos esta vacia y escuchar cambios en tiempo real
         lifecycleScope.launch(Dispatchers.IO) {
             val actuales = repository.obtenerOrdenes.first()
             if (actuales.isEmpty()) {
@@ -67,7 +63,6 @@ class DashboardClienteActivity : AppCompatActivity() {
                 mockOrdenes.forEach { repository.guardarOrden(it) }
             }
 
-            // Observar el Flow de Room para actualizar el RecyclerView automaticamente
             repository.obtenerOrdenes.collect { listaOrdenes ->
                 withContext(Dispatchers.Main) {
                     rvOrdenes.adapter = OrdenAdapter(listaOrdenes) { ordenSeleccionada ->
@@ -92,35 +87,31 @@ class DashboardClienteActivity : AppCompatActivity() {
             }
         }
 
-        // Boton Escaner QR / Registrar Equipo
         val btnEscanearQR = findViewById<Button>(R.id.btnEscanearQR)
         btnEscanearQR.setOnClickListener {
             val intent = Intent(this, NuevoEquipoActivity::class.java)
             startActivity(intent)
         }
 
-        // Configurar el boton de salir
         val tvLogout = findViewById<TextView>(R.id.tvLogout)
         tvLogout.setOnClickListener {
-            // Limpiar las preferencias guardadas
+
             val sharedPreferences = getSharedPreferences("MisPreferenciasApp", android.content.Context.MODE_PRIVATE)
             sharedPreferences.edit().clear().apply()
 
             val intent = android.content.Intent(this, MainActivity::class.java)
-            // Matar el historial por completo
+
             intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
             finish()
         }
 
-        // Probar notificacion
         NotificacionHelper.enviarNotificacion(
             this,
             "MCmovilCare",
             "Tu equipo Samsung Galaxy S22 cambio a estado: Listo"
         )
 
-        // Llamada a la API con ViewModel usando Factory compatible con todas las versiones
         val factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
