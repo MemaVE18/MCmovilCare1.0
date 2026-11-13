@@ -6,25 +6,28 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.example.mcmovilcare.data.local.AppDatabase
+import com.example.mcmovilcare.ui.theme.MCMovilCareTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
 
     private lateinit var db: AppDatabase
 
@@ -33,7 +36,7 @@ class MainActivity : AppCompatActivity() {
             if (!isGranted) {
                 Toast.makeText(
                     this,
-                    "Las notificaciones estan deshabilitadas",
+                    "Las notificaciones están deshabilitadas",
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -50,20 +53,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         enableEdgeToEdge()
-        setContentView(R.layout.activity_main)
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
 
         verificarYPedirPermisoNotificaciones()
-
-        val etEmail = findViewById<EditText>(R.id.etCorreo)
-        val etPassword = findViewById<EditText>(R.id.etContrasena)
-        val btnLogin = findViewById<Button>(R.id.btnIngresar)
-        val progressBarLogin = findViewById<ProgressBar>(R.id.progressBarLogin)
 
         db = Room.databaseBuilder(
             applicationContext,
@@ -73,39 +64,115 @@ class MainActivity : AppCompatActivity() {
             .fallbackToDestructiveMigration()
             .build()
 
-        btnLogin.setOnClickListener {
-            val email = etEmail.text.toString().trim().lowercase()
-
-            if (email.isEmpty()) {
-                Toast.makeText(this, "Ingresa un correo valido", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+        // 🚀 Interfaz de usuario con Jetpack Compose y Material 3
+        setContent {
+            MCMovilCareTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    LoginScreenContent(
+                        onLoginClick = { email -> procesarLogin(email) }
+                    )
+                }
             }
+        }
+    }
 
-            progressBarLogin.visibility = View.VISIBLE
-            btnLogin.isEnabled = false
+    @Composable
+    private fun LoginScreenContent(onLoginClick: (String) -> Unit) {
+        var email by remember { mutableStateOf("") }
+        var password by remember { mutableStateOf("") }
+        var isLoading by remember { mutableStateOf(false) }
 
-            lifecycleScope.launch(Dispatchers.IO) {
-                val usuarioDao = db.usuarioDao()
-                val usuario = usuarioDao.obtenerPorEmail(email)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "MCMovilCare",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
 
-                withContext(Dispatchers.Main) {
-                    if (usuario != null) {
-                        redireccionarPorRol(usuario.rol.toString())
-                    } else {
-                        if (email.contains("tecnico")) {
-                            redireccionarPorRol("TECNICO")
-                        } else if (email.contains("admin")) {
-                            redireccionarPorRol("ADMIN")
-                        } else if (email.contains("cliente")) {
-                            redireccionarPorRol("CLIENTE")
-                        } else {
-                            progressBarLogin.visibility = View.GONE
-                            btnLogin.isEnabled = true
+            Spacer(modifier = Modifier.height(24.dp))
+
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Correo Electrónico") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Contraseña") },
+                visualTransformation = PasswordVisualTransformation(),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            if (isLoading) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            } else {
+                Button(
+                    onClick = {
+                        if (email.trim().isEmpty()) {
                             Toast.makeText(
                                 this@MainActivity,
-                                "Usuario no encontrado",
+                                "Ingresa un correo válido",
                                 Toast.LENGTH_SHORT
                             ).show()
+                        } else {
+                            isLoading = true
+                            onLoginClick(email.trim().lowercase())
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Ingresar")
+                }
+            }
+        }
+    }
+
+    private fun procesarLogin(email: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val usuarioDao = db.usuarioDao()
+            val usuario = usuarioDao.obtenerPorEmail(email)
+
+            withContext(Dispatchers.Main) {
+                if (usuario != null) {
+                    redireccionarPorRol(usuario.rol.toString())
+                } else {
+                    if (email.contains("tecnico")) {
+                        redireccionarPorRol("TECNICO")
+                    } else if (email.contains("admin")) {
+                        redireccionarPorRol("ADMIN")
+                    } else if (email.contains("cliente")) {
+                        redireccionarPorRol("CLIENTE")
+                    } else {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Usuario no encontrado",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        // Recargar Compose si no se encontró usuario
+                        setContent {
+                            MCMovilCareTheme {
+                                Surface(modifier = Modifier.fillMaxSize()) {
+                                    LoginScreenContent(onLoginClick = { procesarLogin(it) })
+                                }
+                            }
                         }
                     }
                 }
@@ -126,13 +193,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun redireccionarPorRol(rolNombre: String) {
-        val progressBar = findViewById<ProgressBar>(R.id.progressBarLogin)
-        val btnIngresar = findViewById<Button>(R.id.btnIngresar)
-
-        if (progressBar != null) progressBar.visibility = View.GONE
-        if (btnIngresar != null) btnIngresar.isEnabled = true
-
-        // 1. Guardar la sesión localmente
         val sharedPreferences = getSharedPreferences("MisPreferenciasApp", Context.MODE_PRIVATE)
         sharedPreferences.edit().apply {
             putBoolean("isLoggedIn", true)
@@ -152,7 +212,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             "TECNICO" -> {
-                Toast.makeText(this, "Bienvenido Tecnico", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Bienvenido Técnico", Toast.LENGTH_SHORT).show()
                 Intent(this, HistorialActivity::class.java).apply {
                     putExtra("EXTRA_ROL", rolNombre)
                 }
