@@ -71,7 +71,6 @@ class DetalleOrdenActivity : AppCompatActivity() {
         val mantencion = intent.getStringExtra("EXTRA_MANTENCION") ?: "15-04-2027"
         val evidencia = intent.getStringExtra("EXTRA_EVIDENCIA") ?: "Sin evidencias adjuntas"
 
-
         val tvEstado = findViewById<TextView>(R.id.tvDetalleEstado)
         val tvAutorizado = findViewById<TextView>(R.id.tvDetalleAutorizado)
         val layoutAprobacion = findViewById<LinearLayout>(R.id.layoutAprobacion)
@@ -118,7 +117,7 @@ class DetalleOrdenActivity : AppCompatActivity() {
             layoutAprobacion.visibility = View.GONE
             NotificacionHelper.enviarNotificacion(
                 this,
-                "Cotizacion Aprobada",
+                "Cotizacion Aprobada (Orden #$id)",
                 "Has aprobado la reparacion de tu $equipo."
             )
             Toast.makeText(this, "Cotizacion aprobada con exito", Toast.LENGTH_SHORT).show()
@@ -130,14 +129,36 @@ class DetalleOrdenActivity : AppCompatActivity() {
             tvAutorizado.text = "Autorizado por el cliente: NO (Rechazado)"
             tvAutorizado.setTextColor(Color.parseColor("#F44336"))
             layoutAprobacion.visibility = View.GONE
+            NotificacionHelper.enviarNotificacion(
+                this,
+                "Cotizacion Rechazada (Orden #$id)",
+                "Has rechazado la reparacion de tu $equipo."
+            )
             Toast.makeText(this, "Cotizacion rechazada", Toast.LENGTH_SHORT).show()
         }
-
-        NotificacionHelper.enviarNotificacion(
-            this,
-            "Consulta de Orden #$id",
-            "Estas revisando la orden del equipo $equipo."
-        )
+        when {
+            estado.equals("Listo", ignoreCase = true) || estado.equals("Finalizado", ignoreCase = true) -> {
+                NotificacionHelper.enviarNotificacion(
+                    this,
+                    "¡Pedido Listo! (Orden #$id)",
+                    "Tu $equipo ya está reparado y listo para retirar."
+                )
+            }
+            requiereAutorizacion && !estado.equals("Aprobado", ignoreCase = true) && !estado.equals("Rechazado", ignoreCase = true) -> {
+                NotificacionHelper.enviarNotificacion(
+                    this,
+                    "Pendiente de Aprobacion (Orden #$id)",
+                    "El tecnico envio la cotizacion de tu $equipo. Requiere tu aprobacion."
+                )
+            }
+            estado.contains("revision", ignoreCase = true) || estado.contains("revisión", ignoreCase = true) -> {
+                NotificacionHelper.enviarNotificacion(
+                    this,
+                    "Equipo en Revision (Orden #$id)",
+                    "El tecnico esta revisando tu $equipo."
+                )
+            }
+        }
 
         findViewById<Button>(R.id.btnGenerarPdf).setOnClickListener {
             val pdfGenerator = PdfGenerator()

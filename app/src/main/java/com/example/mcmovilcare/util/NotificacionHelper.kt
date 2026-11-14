@@ -17,7 +17,7 @@ object NotificacionHelper {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Notificaciones MCmovilCare",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH
             )
             notificationManager.createNotificationChannel(channel)
         }
@@ -26,10 +26,10 @@ object NotificacionHelper {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(titulo)
             .setContentText(mensaje)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
 
-        notificationManager.notify(101, notification)
+        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
     }
 }

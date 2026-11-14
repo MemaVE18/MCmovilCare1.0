@@ -13,27 +13,31 @@ class AppRepository(
     private val equipoDao: EquipoDao,
     private val ordenTrabajoDao: OrdenTrabajoDao
 ) {
-    val obtenerUsuarios: Flow<List<Usuario>> get() = usuarioDao.obtenerTodosLosUsuarios()
+    val cliente = ClienteRepository(usuarioDao, equipoDao, ordenTrabajoDao)
+    val tecnico = TecnicoRepository(equipoDao, ordenTrabajoDao)
+    val admin = AdminRepository(usuarioDao, equipoDao, ordenTrabajoDao)
 
-    fun obtenerUsuario(id: String): Flow<Usuario?> = usuarioDao.obtenerUsuarioPorId(id)
+    val obtenerUsuarios: Flow<List<Usuario>> get() = admin.obtenerTodosLosUsuarios
+
+    fun obtenerUsuario(id: String): Flow<Usuario?> = admin.obtenerUsuarioPorId(id)
 
     suspend fun guardarUsuario(usuario: Usuario) {
-        usuarioDao.insertarUsuario(usuario)
+        admin.guardarUsuario(usuario)
     }
 
-    val obtenerEquipos: Flow<List<Equipo>> = equipoDao.obtenerEquipos()
+    val obtenerEquipos: Flow<List<Equipo>> = cliente.obtenerMisEquipos
 
     suspend fun guardarEquipo(equipo: Equipo) {
-        equipoDao.insertarEquipo(equipo)
+        cliente.registrarEquipo(equipo)
     }
 
-    val obtenerOrdenes: Flow<List<OrdenTrabajo>> = ordenTrabajoDao.obtenerOrdenes()
+    val obtenerOrdenes: Flow<List<OrdenTrabajo>> = admin.obtenerTodasLasOrdenes
 
     suspend fun guardarOrden(orden: OrdenTrabajo) {
-        ordenTrabajoDao.insertarOrden(orden)
+        cliente.crearSolicitudOrden(orden)
     }
 
     suspend fun cambiarEstadoOrden(ordenId: String, nuevoEstado: String) {
-        ordenTrabajoDao.actualizarEstadoOrden(ordenId, nuevoEstado)
+        tecnico.actualizarDiagnosticoOEstado(ordenId, nuevoEstado)
     }
 }
