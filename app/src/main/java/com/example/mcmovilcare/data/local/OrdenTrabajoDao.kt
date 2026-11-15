@@ -9,6 +9,9 @@ interface OrdenTrabajoDao {
     @Query("SELECT * FROM ordenes_trabajo")
     fun obtenerOrdenes(): Flow<List<OrdenTrabajo>>
 
+    @Query("SELECT * FROM ordenes_trabajo WHERE id = :ordenId LIMIT 1")
+    suspend fun obtenerOrdenPorId(ordenId: String): OrdenTrabajo?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarOrden(orden: OrdenTrabajo)
 

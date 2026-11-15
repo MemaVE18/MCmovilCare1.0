@@ -55,6 +55,7 @@ class DashboardClienteActivity : ComponentActivity() {
             "mcmovilcare_db"
         )
             .enableMultiInstanceInvalidation()
+            .fallbackToDestructiveMigration()
             .build()
 
         repository = AppRepository(

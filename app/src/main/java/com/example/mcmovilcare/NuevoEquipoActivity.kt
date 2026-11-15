@@ -83,7 +83,12 @@ class NuevoEquipoActivity : ComponentActivity() {
                                     requiereAutorizacion = false,
                                     fechaIngreso = "22-10-2026"
                                 )
-                                database.ordenTrabajoDao().insertarOrden(nuevaOrden)
+                                try {
+                                    val ordenApi = RetrofitClient.apiService.crearOrden(nuevaOrden)
+                                    database.ordenTrabajoDao().insertarOrden(ordenApi)
+                                } catch (_: Exception) {
+                                    database.ordenTrabajoDao().insertarOrden(nuevaOrden)
+                                }
 
                                 withContext(Dispatchers.Main) {
                                     Toast.makeText(

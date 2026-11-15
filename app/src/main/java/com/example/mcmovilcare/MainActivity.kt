@@ -72,7 +72,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     LoginScreenContent(
-                        onLoginClick = { email -> procesarLogin(email) }
+                        onLoginClick = { email, pass -> procesarLogin(email, pass) }
                     )
                 }
             }
@@ -80,7 +80,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun LoginScreenContent(onLoginClick: (String) -> Unit) {
+    private fun LoginScreenContent(onLoginClick: (String, String) -> Unit) {
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
         var isLoading by remember { mutableStateOf(false) }
@@ -126,7 +126,7 @@ class MainActivity : ComponentActivity() {
             } else {
                 Button(
                     onClick = {
-                        if (email.trim().isEmpty()) {
+                        if (email.trim().isEmpty()|| password.isEmpty()) {
                             Toast.makeText(
                                 this@MainActivity,
                                 "Ingresa un correo válido",
@@ -134,7 +134,7 @@ class MainActivity : ComponentActivity() {
                             ).show()
                         } else {
                             isLoading = true
-                            onLoginClick(email.trim().lowercase())
+                            onLoginClick(email.trim().lowercase(), password)
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -145,33 +145,34 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun procesarLogin(email: String) {
+    private fun procesarLogin(email: String, pass: String) {
         lifecycleScope.launch(Dispatchers.IO) {
             val usuarioDao = db.usuarioDao()
+
+            try {
+                val usuariosApi = RetrofitClient.apiService.obtenerUsuarios()
+                for (u in usuariosApi) {
+                    usuarioDao.insertarUsuario(u.copy(correo = u.correo.trim().lowercase()))
+                }
+            } catch (_: Exception) {
+                // Si falla la red, valida contra lo que ya esté guardado en Room
+            }
+
             val usuario = usuarioDao.obtenerPorEmail(email)
 
             withContext(Dispatchers.Main) {
-                if (usuario != null) {
+                if (usuario != null && usuario.password == pass) {
                     redireccionarPorRol(usuario.rol.toString())
                 } else {
-                    if (email.contains("tecnico")) {
-                        redireccionarPorRol("TECNICO")
-                    } else if (email.contains("admin")) {
-                        redireccionarPorRol("ADMIN")
-                    } else if (email.contains("cliente")) {
-                        redireccionarPorRol("CLIENTE")
-                    } else {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Usuario no encontrado",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        // Recargar Compose si no se encontró usuario
-                        setContent {
-                            MCMovilCareTheme {
-                                Surface(modifier = Modifier.fillMaxSize()) {
-                                    LoginScreenContent(onLoginClick = { procesarLogin(it) })
-                                }
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Correo o contraseña incorrectos",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    setContent {
+                        MCMovilCareTheme {
+                            Surface(modifier = Modifier.fillMaxSize()) {
+                                LoginScreenContent(onLoginClick = { e, p -> procesarLogin(e, p) })
                             }
                         }
                     }

@@ -8,7 +8,7 @@ import com.example.mcmovilcare.model.Usuario
 
 @Database(
     entities = [Usuario::class, Equipo::class, OrdenTrabajo::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
