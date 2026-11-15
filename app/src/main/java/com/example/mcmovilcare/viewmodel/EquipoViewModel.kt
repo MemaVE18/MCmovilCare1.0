@@ -63,7 +63,7 @@ class EquipoViewModel(
                 marca = currentState.marca,
                 modelo = currentState.modelo,
                 numeroSerie = currentState.numeroSerie,
-                accesorios = TODO()
+                accesorios = "Sin accesorios"
             )
             repository.guardarEquipo(nuevoEquipo)
             _uiState.update { it.copy(guardadoExitoso = true) }

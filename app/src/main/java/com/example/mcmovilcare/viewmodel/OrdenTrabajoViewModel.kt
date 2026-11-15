@@ -14,8 +14,11 @@ class OrdenTrabajoViewModel(
     fun cargarEquiposDesdeApi() {
         viewModelScope.launch {
             try {
-                val respuesta = RetrofitClient.apiService.obtenerEquipos()
-                Log.d("API_REST", "Equipos recibidos de la API: ${respuesta.size}")
+                val ordenesApi = RetrofitClient.apiService.obtenerOrdenes()
+                for (o in ordenesApi) {
+                    repository.guardarOrden(o)
+                }
+                Log.d("API_REST", "Ordenes sincronizadas desde la API: ${ordenesApi.size}")
             } catch (e: Exception) {
                 Log.e("API_REST", "Error de red: ${e.message}")
             }

@@ -16,7 +16,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -92,15 +96,21 @@ class HistorialActivity : ComponentActivity() {
                     PanelAdminScreen(
                         ordenes = listaOrdenes,
                         usuarios = listaUsuarios,
-                        onCrearUsuario = { nombre, correo, rol ->
+                        onCrearUsuario = { nombre, correo, pass, rol ->
                             lifecycleScope.launch(Dispatchers.IO) {
                                 val nuevo = Usuario(
                                     id = UUID.randomUUID().toString().take(5),
                                     nombre = nombre,
                                     correo = correo.lowercase().trim(),
-                                    rol = rol
+                                    rol = rol,
+                                    password = pass.ifBlank { "1234" }
                                 )
-                                database.usuarioDao().insertarUsuario(nuevo)
+                                try {
+                                    val creadoApi = RetrofitClient.apiService.crearUsuario(nuevo)
+                                    database.usuarioDao().insertarUsuario(creadoApi)
+                                } catch (_: Exception) {
+                                    database.usuarioDao().insertarUsuario(nuevo)
+                                }
                                 withContext(Dispatchers.Main) {
                                     Toast.makeText(this@HistorialActivity, "Usuario guardado con éxito", Toast.LENGTH_SHORT).show()
                                 }
@@ -121,6 +131,13 @@ class HistorialActivity : ComponentActivity() {
                                     requiereAut = requiereAut,
                                     nuevaEvidencia = evidencia
                                 )
+                                try {
+                                    val ordenActualizada = database.ordenTrabajoDao().obtenerOrdenPorId(ordenId)
+                                    if (ordenActualizada != null) {
+                                        RetrofitClient.apiService.actualizarOrden(ordenId, ordenActualizada)
+                                    }
+                                } catch (_: Exception) {
+                                }
                                 withContext(Dispatchers.Main) {
                                     NotificacionHelper.enviarNotificacion(
                                         this@HistorialActivity,
@@ -403,11 +420,12 @@ fun PanelTecnicoScreen(
 fun PanelAdminScreen(
     ordenes: List<OrdenTrabajo>,
     usuarios: List<Usuario>,
-    onCrearUsuario: (String, String, Rol) -> Unit,
+    onCrearUsuario: (String, String, String, Rol) -> Unit,
     onCerrarSesion: () -> Unit
 ) {
     var nombre by remember { mutableStateOf("") }
     var correo by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var rolSeleccionado by remember { mutableStateOf(Rol.TECNICO) }
 
     Scaffold(
@@ -482,6 +500,17 @@ fun PanelAdminScreen(
                             singleLine = true
                         )
 
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Contraseña") },
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true
+                        )
+
                         Text(
                             text = "Seleccionar Rol:",
                             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
@@ -506,9 +535,10 @@ fun PanelAdminScreen(
                         Button(
                             onClick = {
                                 if (nombre.isNotBlank() && correo.isNotBlank()) {
-                                    onCrearUsuario(nombre, correo, rolSeleccionado)
+                                    onCrearUsuario(nombre, correo, password, rolSeleccionado)
                                     nombre = ""
                                     correo = ""
+                                    password = ""
                                 }
                             },
                             modifier = Modifier

@@ -24,4 +24,8 @@ El proyecto implementa el patron de arquitectura MVVM (Model-View-ViewModel), co
 3. Esperar a que Gradle descargue las dependencias y termine la sincronizacion (Sync Project with Gradle Files).
 4. Configurar un emulador o conectar un dispositivo fisico/emulado con Android 8.0 (API 26) o superior.
 5. Presionar el boton Run 'app' (Shift + F10) en Android Studio.
-6. Para pruebas rapidas en el login sin crear usuarios previos, ingresar cualquier correo que contenga la palabra "cliente", "tecnico" o "admin" para acceder al perfil correspondiente.
+6. Para pruebas rapidas en el login sin crear usuarios previos, ingresar:
+- Admin: admin@duoc.cl / 1234
+- Técnico: tecnico@duoc.cl / 1234
+- Técnico: emacast.tecnico@duoc.cl / 123
+- Cliente: cliente@duoc.cl / 1234

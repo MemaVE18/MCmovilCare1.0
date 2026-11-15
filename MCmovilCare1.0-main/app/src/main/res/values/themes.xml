@@ -1,6 +1,0 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.MCMovilCare" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Sin colores personalizados para evitar errores de referencia -->
-    </style>
-</resources>

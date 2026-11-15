@@ -39,5 +39,12 @@ class AppRepository(
 
     suspend fun cambiarEstadoOrden(ordenId: String, nuevoEstado: String) {
         tecnico.actualizarDiagnosticoOEstado(ordenId, nuevoEstado)
+        try {
+            val orden = ordenTrabajoDao.obtenerOrdenPorId(ordenId)
+            if (orden != null) {
+                com.example.mcmovilcare.RetrofitClient.apiService.actualizarOrden(ordenId, orden)
+            }
+        } catch (_: Exception) {
+        }
     }
 }
