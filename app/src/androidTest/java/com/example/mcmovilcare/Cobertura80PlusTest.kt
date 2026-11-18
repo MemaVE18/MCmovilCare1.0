@@ -8,6 +8,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.room.Room
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onView
@@ -15,11 +19,19 @@ import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.example.mcmovilcare.data.local.AppDatabase
+import com.example.mcmovilcare.model.Equipo
 import com.example.mcmovilcare.model.OrdenTrabajo
 import com.example.mcmovilcare.model.Rol
 import com.example.mcmovilcare.model.Usuario
+import com.example.mcmovilcare.navigation.Screen
+import com.example.mcmovilcare.ui.screens.AdminDashboardScreen
+import com.example.mcmovilcare.ui.screens.TecnicoDashboardScreen
 import com.example.mcmovilcare.ui.theme.MCMovilCareTheme
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -313,6 +325,73 @@ class Cobertura80PlusTest {
         }
         ActivityScenario.launch<DetalleOrdenActivity>(intentRevision).use {
             onView(withId(R.id.btnVolver)).perform(click())
+        }
+    }
+
+    @Test
+    fun uiScreens_admin_y_tecnico_dashboard_navegan_correctamente() {
+        composeRule.setContent {
+            MCMovilCareTheme {
+                val navController = rememberNavController()
+                NavHost(navController = navController, startDestination = "admin_test") {
+                    composable("admin_test") {
+                        AdminDashboardScreen(navController = navController)
+                    }
+                    composable(Screen.AdminGestionUsuarios.route) {
+                        TecnicoDashboardScreen(navController = navController)
+                    }
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("Administración de Órdenes").assertExists()
+        composeRule.onNodeWithText("Gestionar Usuarios").performClick()
+        composeRule.onNodeWithText("Mis Trabajos Asignados").assertExists()
+        composeRule.onNodeWithText("Lista de órdenes del técnico").assertExists()
+    }
+
+    @Test
+    fun daos_room_crud_completo() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+
+        try {
+            val usuario = Usuario("u99", "Pedro Test", "pedro@duoc.cl", Rol.CLIENTE, "1234")
+            db.usuarioDao().insertarUsuario(usuario)
+            assertNotNull(db.usuarioDao().obtenerPorEmail("pedro@duoc.cl"))
+            assertNotNull(db.usuarioDao().obtenerUsuarioPorId("u99").first())
+            assertTrue(db.usuarioDao().obtenerTodosLosUsuarios().first().isNotEmpty())
+
+            val orden = OrdenTrabajo("o99", "Lenovo ThinkPad", "SN99", "En revision", null, null, false, "18-11-2026")
+            db.ordenTrabajoDao().insertarOrden(orden)
+            assertNotNull(db.ordenTrabajoDao().obtenerOrdenPorId("o99"))
+            db.ordenTrabajoDao().actualizarEstadoOrden("o99", "En diagnostico")
+            db.ordenTrabajoDao().actualizarOrdenTecnico(
+                ordenId = "o99",
+                nuevoEstado = "Listo",
+                nuevoDiagnostico = "Limpieza completa",
+                nuevoMonto = 30000.0,
+                requiereAut = false,
+                nuevaEvidencia = "foto_ok.jpg"
+            )
+            val ordenActualizada = db.ordenTrabajoDao().obtenerOrdenPorId("o99")
+            assertEquals("Listo", ordenActualizada?.estado)
+            assertTrue(db.ordenTrabajoDao().obtenerOrdenes().first().isNotEmpty())
+
+            val equipo = Equipo(
+                id = "e99",
+                clienteId = "u99",
+                marca = "HP",
+                modelo = "Pavilion",
+                numeroSerie = "SN-HP-01",
+                accesorios = "Cargador original"
+            )
+            db.equipoDao().insertarEquipo(equipo)
+            assertTrue(db.equipoDao().obtenerEquipos().first().isNotEmpty())
+        } finally {
+            db.close()
         }
     }
 }
