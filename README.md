@@ -29,3 +29,15 @@ El proyecto implementa el patron de arquitectura MVVM (Model-View-ViewModel), co
 - Técnico: tecnico@duoc.cl / 1234
 - Técnico: emacast.tecnico@duoc.cl / 123
 - Cliente: cliente@duoc.cl / 1234
+
+## Testing
+1. Dirigirse a C:\Aplicaciones Mobiles\app\src\androidTest\java\com
+2. Luego dar Click derecho sobre el folder "com(androidTest)", buscar Run'Test in 'com"
+3. Esperar resultados
+
+## Visualizar cobertura del testing
+1. Dirigirse a la terminal de android studio
+2. Posicionarse en raiz de proyecto con cd
+3. Ejecutar código:
+.\gradlew createDebugCoverageReport
+4. Buscar linea "View coverage report at file:/C:/Aplicaciones%20Mobiles/app/build/reports/coverage/androidTest/debug/connected/index.html" y dale click
