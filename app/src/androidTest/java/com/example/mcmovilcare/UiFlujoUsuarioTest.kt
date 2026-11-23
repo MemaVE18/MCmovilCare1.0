@@ -326,4 +326,31 @@ class UiFlujoUsuarioTest {
         assertTrue(qrTocado)
         assertTrue(sesionCerrada)
     }
+
+    @Test
+    fun nuevoEquipo_autocompleta_marca_y_modelo_al_ingresar_sku() {
+        var serieGuardada = ""
+        var marcaGuardada = ""
+        var modeloGuardado = ""
+
+        composeRule.setContent {
+            MCMovilCareTheme {
+                NuevoEquipoScreen(
+                    onAbrirEscaner = {},
+                    onGuardarEquipo = { serie, marca, modelo ->
+                        serieGuardada = serie
+                        marcaGuardada = marca
+                        modeloGuardado = modelo
+                    }
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Código / Serie del Equipo").performTextInput("8806094937121")
+        composeRule.onNodeWithText("Guardar Equipo").assertIsEnabled().performClick()
+
+        assertEquals("8806094937121", serieGuardada)
+        assertEquals("Samsung", marcaGuardada)
+        assertEquals("Galaxy S22", modeloGuardado)
+    }
 }

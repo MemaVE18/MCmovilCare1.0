@@ -10,6 +10,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.example.mcmovilcare.util.SkuCatalogo
 
 class ModelosYValidacionTest {
 
@@ -48,5 +49,16 @@ class ModelosYValidacionTest {
         assertFalse(state.esValido)
         assertFalse(state.guardadoExitoso)
         assertTrue(state.marca.isEmpty())
+    }
+
+    @Test
+    fun skuCatalogo_detecta_codigo_exacto_prefijo_y_desconocido() {
+        val exacto = SkuCatalogo.buscarPorCodigo("8806094937121")
+        assertEquals("Samsung" to "Galaxy S22", exacto)
+
+        val prefijo = SkuCatalogo.buscarPorCodigo("sku-app-iphone15")
+        assertEquals("Apple" to "IPHONE15", prefijo)
+
+        assertNull(SkuCatalogo.buscarPorCodigo("CODIGO-INEXISTENTE"))
     }
 }

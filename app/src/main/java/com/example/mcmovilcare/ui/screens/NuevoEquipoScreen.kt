@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.mcmovilcare.util.SkuCatalogo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +33,13 @@ fun NuevoEquipoScreen(
 
         OutlinedTextField(
             value = codigoEquipo,
-            onValueChange = { codigoEquipo = it },
+            onValueChange = { nuevoCodigo ->
+                codigoEquipo = nuevoCodigo
+                SkuCatalogo.buscarPorCodigo(nuevoCodigo)?.let { (marca, modelo) ->
+                    nombreEquipo = marca
+                    modeloEquipo = modelo
+                }
+            },
             label = { Text("Código / Serie del Equipo") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -42,11 +49,15 @@ fun NuevoEquipoScreen(
             onClick = {
                 onAbrirEscaner { codigoLeido ->
                     codigoEquipo = codigoLeido
+                    SkuCatalogo.buscarPorCodigo(codigoLeido)?.let { (marca, modelo) ->
+                        nombreEquipo = marca
+                        modeloEquipo = modelo
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Abrir Cámara / Escanear Código QR")
+            Text("Abrir Cámara / Escanear QR o SKU")
         }
 
         OutlinedTextField(

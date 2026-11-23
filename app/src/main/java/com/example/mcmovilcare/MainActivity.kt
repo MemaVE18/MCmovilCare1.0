@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -19,17 +20,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.example.mcmovilcare.data.local.AppDatabase
+import com.example.mcmovilcare.model.Rol
+import com.example.mcmovilcare.model.Usuario
 import com.example.mcmovilcare.ui.theme.MCMovilCareTheme
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.UUID
+import android.os.Handler
+import android.os.Looper
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var db: AppDatabase
+    private var introPlayer: MediaPlayer? = null
 
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -44,6 +62,21 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val inicioMs = 0        // Si parte después en tu MP3, pon los milisegundos (ej: 12000 = seg 12)
+        val duracionMs = 10800L  // Duración del pedacito (4.5 segundos)
+
+        introPlayer = MediaPlayer.create(this, R.raw.intro_dandadan)?.apply {
+            if (inicioMs > 0) seekTo(inicioMs)
+            start()
+            Handler(Looper.getMainLooper()).postDelayed({
+                try {
+                    if (isPlaying) stop()
+                } catch (_: Exception) { }
+                release()
+                introPlayer = null
+            }, duracionMs)
+        }
 
         val sharedPreferences = getSharedPreferences("MisPreferenciasApp", Context.MODE_PRIVATE)
         if (sharedPreferences.getBoolean("isLoggedIn", false)) {
@@ -64,23 +97,39 @@ class MainActivity : ComponentActivity() {
             .fallbackToDestructiveMigration()
             .build()
 
-        // 🚀 Interfaz de usuario con Jetpack Compose y Material 3
         setContent {
             MCMovilCareTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    LoginScreenContent(
-                        onLoginClick = { email, pass -> procesarLogin(email, pass) }
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Image(
+                        painter = painterResource(id = R.drawable.bg_dandadan),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.matchParentSize()
                     )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(Color.Black.copy(alpha = 0.62f))
+                    )
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = Color.Transparent
+                    ) {
+                        LoginScreenContent(
+                            onLoginClick = { email, pass -> procesarLogin(email, pass) },
+                            onGoogleLoginClick = { iniciarLoginConGoogle() }
+                        )
+                    }
                 }
             }
         }
     }
 
     @Composable
-    private fun LoginScreenContent(onLoginClick: (String, String) -> Unit) {
+    private fun LoginScreenContent(
+        onLoginClick: (String, String) -> Unit,
+        onGoogleLoginClick: () -> Unit
+    ) {
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
         var isLoading by remember { mutableStateOf(false) }
@@ -126,7 +175,7 @@ class MainActivity : ComponentActivity() {
             } else {
                 Button(
                     onClick = {
-                        if (email.trim().isEmpty()|| password.isEmpty()) {
+                        if (email.trim().isEmpty() || password.isEmpty()) {
                             Toast.makeText(
                                 this@MainActivity,
                                 "Ingresa un correo válido",
@@ -141,6 +190,88 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Text("Ingresar")
                 }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedButton(
+                    onClick = onGoogleLoginClick,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Continuar con Google")
+                }
+            }
+        }
+    }
+
+    private fun iniciarLoginConGoogle() {
+        val webClientId = "369502010508-34n1qiagmda3k3naee4fcfg3733butbr.apps.googleusercontent.com"
+        val googleIdOption = GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId(webClientId)
+            .build()
+
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
+
+        val credentialManager = CredentialManager.create(this)
+        lifecycleScope.launch {
+            try {
+                val result = credentialManager.getCredential(
+                    request = request,
+                    context = this@MainActivity
+                )
+                val credential = result.credential
+                if (credential is CustomCredential &&
+                    credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+                ) {
+                    val googleCred = GoogleIdTokenCredential.createFrom(credential.data)
+                    val emailGoogle = googleCred.id.trim().lowercase()
+                    val nombreGoogle = googleCred.displayName ?: emailGoogle.substringBefore("@")
+                    procesarLoginGoogle(emailGoogle, nombreGoogle)
+                }
+            } catch (e: GetCredentialException) {
+                Toast.makeText(
+                    this@MainActivity,
+                    "No se pudo iniciar con Google: ${e.localizedMessage}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    private fun procesarLoginGoogle(emailGoogle: String, nombreGoogle: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val usuarioDao = db.usuarioDao()
+            try {
+                val usuariosApi = RetrofitClient.apiService.obtenerUsuarios()
+                for (u in usuariosApi) {
+                    usuarioDao.insertarUsuario(u.copy(correo = u.correo.trim().lowercase()))
+                }
+            } catch (_: Exception) { }
+
+            val existente = usuarioDao.obtenerPorEmail(emailGoogle)
+            val usuarioFinal: Usuario = if (existente != null) {
+                existente
+            } else {
+                val nuevoUsuario = Usuario(
+                    id = UUID.randomUUID().toString().take(6),
+                    nombre = nombreGoogle,
+                    correo = emailGoogle,
+                    rol = Rol.CLIENTE,
+                    password = UUID.randomUUID().toString()
+                )
+                val creado = try {
+                    RetrofitClient.apiService.crearUsuario(nuevoUsuario)
+                } catch (_: Exception) {
+                    nuevoUsuario
+                }
+                usuarioDao.insertarUsuario(creado)
+                creado
+            }
+
+            withContext(Dispatchers.Main) {
+                redireccionarPorRol(usuarioFinal.rol.toString())
             }
         }
     }
@@ -172,7 +303,10 @@ class MainActivity : ComponentActivity() {
                     setContent {
                         MCMovilCareTheme {
                             Surface(modifier = Modifier.fillMaxSize()) {
-                                LoginScreenContent(onLoginClick = { e, p -> procesarLogin(e, p) })
+                                LoginScreenContent(
+                                    onLoginClick = { e, p -> procesarLogin(e, p) },
+                                    onGoogleLoginClick = { iniciarLoginConGoogle() }
+                                )
                             }
                         }
                     }
