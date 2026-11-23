@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -12,11 +11,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -36,18 +41,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
-import android.os.Handler
-import android.os.Looper
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var db: AppDatabase
-    private var introPlayer: MediaPlayer? = null
 
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -62,21 +59,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val inicioMs = 0        // Si parte después en tu MP3, pon los milisegundos (ej: 12000 = seg 12)
-        val duracionMs = 10800L  // Duración del pedacito (4.5 segundos)
-
-        introPlayer = MediaPlayer.create(this, R.raw.intro_dandadan)?.apply {
-            if (inicioMs > 0) seekTo(inicioMs)
-            start()
-            Handler(Looper.getMainLooper()).postDelayed({
-                try {
-                    if (isPlaying) stop()
-                } catch (_: Exception) { }
-                release()
-                introPlayer = null
-            }, duracionMs)
-        }
 
         val sharedPreferences = getSharedPreferences("MisPreferenciasApp", Context.MODE_PRIVATE)
         if (sharedPreferences.getBoolean("isLoggedIn", false)) {
@@ -97,23 +79,30 @@ class MainActivity : ComponentActivity() {
             .fallbackToDestructiveMigration()
             .build()
 
+        mostrarPantallaLogin()
+    }
+
+    private fun mostrarPantallaLogin() {
         setContent {
             MCMovilCareTheme {
+                val isDark = isSystemInDarkTheme()
                 Box(modifier = Modifier.fillMaxSize()) {
-                    Image(
-                        painter = painterResource(id = R.drawable.bg_dandadan),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.matchParentSize()
-                    )
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(Color.Black.copy(alpha = 0.62f))
-                    )
+                    if (isDark) {
+                        Image(
+                            painter = painterResource(id = R.drawable.bg_dandadan),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.matchParentSize()
+                        )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(Color.Black.copy(alpha = 0.62f))
+                        )
+                    }
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = Color.Transparent
+                        color = if (isDark) Color.Transparent else MaterialTheme.colorScheme.background
                     ) {
                         LoginScreenContent(
                             onLoginClick = { email, pass -> procesarLogin(email, pass) },
@@ -300,16 +289,7 @@ class MainActivity : ComponentActivity() {
                         "Correo o contraseña incorrectos",
                         Toast.LENGTH_SHORT
                     ).show()
-                    setContent {
-                        MCMovilCareTheme {
-                            Surface(modifier = Modifier.fillMaxSize()) {
-                                LoginScreenContent(
-                                    onLoginClick = { e, p -> procesarLogin(e, p) },
-                                    onGoogleLoginClick = { iniciarLoginConGoogle() }
-                                )
-                            }
-                        }
-                    }
+                    mostrarPantallaLogin()
                 }
             }
         }

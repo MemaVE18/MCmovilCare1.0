@@ -3,20 +3,31 @@ package com.example.mcmovilcare.util
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.res.Configuration
 import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.example.mcmovilcare.R
 
 object NotificacionHelper {
-    private const val CHANNEL_ID = "mcmovilcare_channel_v2"
+    private const val CHANNEL_LIGHT = "mcmovilcare_channel_light"
+    private const val CHANNEL_DARK = "mcmovilcare_channel_dark"
 
     fun enviarNotificacion(context: Context, titulo: String, mensaje: String) {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        val soundUri = Uri.parse("android.resource://${context.packageName}/${R.raw.dan_da_dan}")
+        val isDark = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
+
+        val channelId = if (isDark) CHANNEL_DARK else CHANNEL_LIGHT
+        val soundUri = if (isDark) {
+            Uri.parse("android.resource://${context.packageName}/${R.raw.dan_da_dan}")
+        } else {
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val audioAttributes = AudioAttributes.Builder()
@@ -25,8 +36,8 @@ object NotificacionHelper {
                 .build()
 
             val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Notificaciones MCmovilCare",
+                channelId,
+                if (isDark) "Notificaciones MCmovilCare (Noche)" else "Notificaciones MCmovilCare",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 setSound(soundUri, audioAttributes)
@@ -34,7 +45,7 @@ object NotificacionHelper {
             notificationManager.createNotificationChannel(channel)
         }
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(titulo)
             .setContentText(mensaje)

@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -36,7 +37,6 @@ import com.example.mcmovilcare.data.local.AppDatabase
 import com.example.mcmovilcare.model.OrdenTrabajo
 import com.example.mcmovilcare.repository.AppRepository
 import com.example.mcmovilcare.ui.theme.MCMovilCareTheme
-import com.example.mcmovilcare.util.NotificacionHelper
 import com.example.mcmovilcare.viewmodel.OrdenTrabajoViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -78,12 +78,6 @@ class DashboardClienteActivity : ComponentActivity() {
                 mockOrdenes.forEach { repository.guardarOrden(it) }
             }
         }
-
-        NotificacionHelper.enviarNotificacion(
-            this,
-            "MCmovilCare",
-            "Tu equipo Samsung Galaxy S22 cambio a estado: Listo"
-        )
 
         val factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -154,20 +148,23 @@ fun DashboardClienteScreenContent(
     onEscanearQR: () -> Unit,
     onCerrarSesion: () -> Unit
 ) {
+    val isDark = isSystemInDarkTheme()
     Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(id = R.drawable.bg_dandadan),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize()
-        )
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(Color.Black.copy(alpha = 0.62f))
-        )
+        if (isDark) {
+            Image(
+                painter = painterResource(id = R.drawable.bg_dandadan),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize()
+            )
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(Color.Black.copy(alpha = 0.62f))
+            )
+        }
         Scaffold(
-            containerColor = Color.Transparent,
+            containerColor = if (isDark) Color.Transparent else MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
                     title = {
@@ -199,7 +196,7 @@ fun DashboardClienteScreenContent(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
+                        containerColor = if (isDark) Color.Transparent else MaterialTheme.colorScheme.background
                     )
                 )
             }
