@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,8 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -36,10 +39,11 @@ import com.example.mcmovilcare.model.OrdenTrabajo
 import com.example.mcmovilcare.model.Rol
 import com.example.mcmovilcare.model.Usuario
 import com.example.mcmovilcare.repository.AppRepository
+import com.example.mcmovilcare.ui.components.CyberBackground
+import com.example.mcmovilcare.ui.theme.DigitalGhostFont
 import com.example.mcmovilcare.ui.theme.MCMovilCareTheme
 import com.example.mcmovilcare.viewmodel.OrdenTrabajoViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
@@ -49,6 +53,7 @@ import java.util.UUID
 class DashboardAdminActivity : ComponentActivity() {
 
     private lateinit var repository: AppRepository
+    private lateinit var viewModel: OrdenTrabajoViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,6 +65,7 @@ class DashboardAdminActivity : ComponentActivity() {
             "mcmovilcare_db"
         )
             .enableMultiInstanceInvalidation()
+            .fallbackToDestructiveMigration()
             .build()
 
         repository = AppRepository(
@@ -67,18 +73,6 @@ class DashboardAdminActivity : ComponentActivity() {
             database.equipoDao(),
             database.ordenTrabajoDao()
         )
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            val actuales = repository.obtenerOrdenes.first()
-            if (actuales.isEmpty()) {
-                val mockOrdenes = listOf(
-                    OrdenTrabajo("1", "Samsung Galaxy S22", "SN123", "En diagnostico", null, null, false, "10-10-2026"),
-                    OrdenTrabajo("2", "MacBook Pro M1", "SN456", "Pend. autorizacion", "Pantalla rota", 150000.0, true, "12-10-2026"),
-                    OrdenTrabajo("3", "iPhone 13", "SN789", "Listo", "Cambio de bateria", 45000.0, false, "15-10-2026")
-                )
-                mockOrdenes.forEach { repository.guardarOrden(it) }
-            }
-        }
 
         val factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -91,11 +85,10 @@ class DashboardAdminActivity : ComponentActivity() {
                 return OrdenTrabajoViewModel(repository) as T
             }
         }
-        val viewModel = ViewModelProvider(this, factory)[OrdenTrabajoViewModel::class.java]
-        viewModel.cargarEquiposDesdeApi()
+        viewModel = ViewModelProvider(this, factory)[OrdenTrabajoViewModel::class.java]
 
         setContent {
-            MCMovilCareTheme {
+            MCMovilCareTheme(darkTheme = true) {
                 val listaOrdenes by repository.obtenerOrdenes.collectAsState(initial = emptyList())
                 val listaUsuarios by repository.obtenerUsuarios.collectAsState(initial = emptyList())
 
@@ -108,6 +101,13 @@ class DashboardAdminActivity : ComponentActivity() {
                     onCerrarSesion = { cerrarSesion() }
                 )
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::viewModel.isInitialized) {
+            viewModel.cargarEquiposDesdeApi()
         }
     }
 
@@ -132,7 +132,7 @@ class DashboardAdminActivity : ComponentActivity() {
             )
             repository.guardarUsuario(nuevoUsuario)
             withContext(Dispatchers.Main) {
-                Toast.makeText(this@DashboardAdminActivity, "Usuario guardado con éxito", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@DashboardAdminActivity, "Usuario guardado con exito", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -163,159 +163,209 @@ fun DashboardAdminScreenContent(
 
     val roles = listOf("CLIENTE", "TECNICO", "ADMIN")
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "Panel Administrador",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Text(
-                            text = "Gestión global del sistema",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                actions = {
-                    TextButton(onClick = onCerrarSesion) {
-                        Text("Cerrar Sesión", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+    CyberBackground(isDashboard = true) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onBackground,
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(
+                                text = "Panel Administrador",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontFamily = DigitalGhostFont,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                            Text(
+                                text = "Gestion global del sistema",
+                                style = MaterialTheme.typography.labelSmall.copy(fontFamily = DigitalGhostFont),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    actions = {
+                        TextButton(onClick = onCerrarSesion) {
+                            Text(
+                                "Cerrar Sesion",
+                                fontFamily = DigitalGhostFont,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                 )
-            )
-        }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 24.dp)
-        ) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+            }
+        ) { paddingValues ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(bottom = 24.dp)
+            ) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+                        )
                     ) {
-                        Text(
-                            text = "Registrar Perfil de Usuario",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-
-                        OutlinedTextField(
-                            value = nombreInput,
-                            onValueChange = { nombreInput = it },
-                            label = { Text("Nombre") },
-                            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true
-                        )
-
-                        OutlinedTextField(
-                            value = correoInput,
-                            onValueChange = { correoInput = it },
-                            label = { Text("Correo (ej: tecnico2@duoc.cl)") },
-                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true
-                        )
-
-                        Text(
-                            text = "Seleccionar Rol:",
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                            color = Color.Gray
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            roles.forEach { rol ->
-                                FilterChip(
-                                    selected = rolSeleccionado == rol,
-                                    onClick = { rolSeleccionado = rol },
-                                    label = { Text(rol, fontWeight = FontWeight.SemiBold) },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(10.dp)
+                            Text(
+                                text = "Registrar Perfil de Usuario",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = DigitalGhostFont,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            OutlinedTextField(
+                                value = nombreInput,
+                                onValueChange = { nombreInput = it },
+                                label = { Text("Nombre", fontFamily = DigitalGhostFont) },
+                                textStyle = TextStyle(fontFamily = DigitalGhostFont, fontSize = 14.sp),
+                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true
+                            )
+
+                            OutlinedTextField(
+                                value = correoInput,
+                                onValueChange = { correoInput = it },
+                                label = { Text("Correo (ej: tecnico2@duoc.cl)", fontFamily = DigitalGhostFont) },
+                                textStyle = TextStyle(fontFamily = DigitalGhostFont, fontSize = 14.sp),
+                                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true
+                            )
+
+                            Text(
+                                text = "Seleccionar Rol:",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontFamily = DigitalGhostFont,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                roles.forEach { rol ->
+                                    FilterChip(
+                                        selected = rolSeleccionado == rol,
+                                        onClick = { rolSeleccionado = rol },
+                                        label = {
+                                            Text(
+                                                rol,
+                                                fontFamily = DigitalGhostFont,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 11.sp
+                                            )
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    onGuardarUsuario(nombreInput, correoInput, rolSeleccionado)
+                                    nombreInput = ""
+                                    correoInput = ""
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Text(
+                                    "Guardar Usuario en BD",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = DigitalGhostFont,
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
+                    }
+                }
 
-                        Button(
-                            onClick = {
-                                onGuardarUsuario(nombreInput, correoInput, rolSeleccionado)
-                                nombreInput = ""
-                                correoInput = ""
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp),
-                            shape = RoundedCornerShape(12.dp)
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Text("Guardar Usuario en BD", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                            Text(
+                                text = "Catalogo Activo (Servicios y Repuestos)",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = DigitalGhostFont,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            ItemCatalogo(titulo = "Mantencion preventiva general", precio = 25000.0)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            ItemCatalogo(titulo = "Cambio de bateria certificada", precio = 45000.0)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            ItemCatalogo(titulo = "Reemplazo modulo pantalla", precio = 150000.0)
                         }
                     }
                 }
-            }
 
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text(
-                            text = "Catálogo Activo (Servicios y Repuestos)",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-
-                        ItemCatalogo(titulo = "Mantención preventiva general", precio = 25000.0)
-                        HorizontalDivider(color = Color(0xFFF0F0F0))
-                        ItemCatalogo(titulo = "Cambio de batería certificada", precio = 45000.0)
-                        HorizontalDivider(color = Color(0xFFF0F0F0))
-                        ItemCatalogo(titulo = "Reemplazo módulo pantalla", precio = 150000.0)
-                    }
+                item {
+                    Text(
+                        text = "Perfiles en Base de Datos (${usuarios.size})",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = DigitalGhostFont,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
                 }
-            }
 
-            item {
-                Text(
-                    text = "Perfiles en Base de Datos (${usuarios.size})",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
+                item {
+                    Text(
+                        text = "Supervision de Ordenes (${ordenes.size})",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = DigitalGhostFont,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
 
-            item {
-                Text(
-                    text = "Supervisión de Órdenes (${ordenes.size})",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-            }
-
-            items(ordenes) { orden ->
-                TarjetaOrdenAdminItem(orden = orden)
+                items(ordenes) { orden ->
+                    TarjetaOrdenAdminItem(orden = orden)
+                }
             }
         }
     }
@@ -337,11 +387,18 @@ fun ItemCatalogo(titulo: String, precio: Double) {
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = titulo, style = MaterialTheme.typography.bodyMedium, color = Color.DarkGray)
+            Text(
+                text = titulo,
+                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = DigitalGhostFont),
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
         Text(
             text = formatoMoneda.format(precio),
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontFamily = DigitalGhostFont,
+                fontWeight = FontWeight.Bold
+            ),
             color = MaterialTheme.colorScheme.primary
         )
     }
@@ -350,17 +407,20 @@ fun ItemCatalogo(titulo: String, precio: Double) {
 @Composable
 fun TarjetaOrdenAdminItem(orden: OrdenTrabajo) {
     val (badgeBg, badgeFg) = when (orden.estado) {
-        "En diagnostico" -> Color(0xFFFFF3E0) to Color(0xFFE65100)
-        "Pend. autorizacion", "Aprobado" -> Color(0xFFFFF8E1) to Color(0xFFF57F17)
-        "Listo" -> Color(0xFFE8F5E9) to Color(0xFF2E7D32)
-        else -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+        "En diagnostico" -> Color(0xFF332200) to Color(0xFFFFB74D)
+        "Pend. autorizacion" -> Color(0xFF3B122B) to Color(0xFFFF4081)
+        "Aprobado", "Listo" -> Color(0xFF00332C) to Color(0xFF00E5FF)
+        "Rechazado" -> Color(0xFF3B1212) to Color(0xFFFF5252)
+        else -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+        )
     ) {
         Row(
             modifier = Modifier
@@ -388,13 +448,16 @@ fun TarjetaOrdenAdminItem(orden: OrdenTrabajo) {
                 Column {
                     Text(
                         text = "Orden #${orden.id} • ${orden.equipoModelo}",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = DigitalGhostFont,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "S/N: ${orden.numeroSerie}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = DigitalGhostFont),
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -406,7 +469,10 @@ fun TarjetaOrdenAdminItem(orden: OrdenTrabajo) {
                 Text(
                     text = orden.estado,
                     color = badgeFg,
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = DigitalGhostFont,
+                        fontWeight = FontWeight.Bold
+                    ),
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                 )
             }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- REEMPLAZAR ESTA LINEA CUANDO LA SESION DE EC2 SE VAYA AL DIAVLO-->
+        <domain includeSubdomains="true">13.218.171.220</domain>
+
+        <domain includeSubdomains="true">34.228.42.153</domain>
+        <domain includeSubdomains="true">54.227.178.120</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

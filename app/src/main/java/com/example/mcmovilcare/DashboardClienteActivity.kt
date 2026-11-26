@@ -6,10 +6,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,29 +23,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.room.Room
 import com.example.mcmovilcare.data.local.AppDatabase
 import com.example.mcmovilcare.model.OrdenTrabajo
 import com.example.mcmovilcare.repository.AppRepository
+import com.example.mcmovilcare.ui.components.CyberBackground
+import com.example.mcmovilcare.ui.theme.DigitalGhostFont
 import com.example.mcmovilcare.ui.theme.MCMovilCareTheme
 import com.example.mcmovilcare.viewmodel.OrdenTrabajoViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
 class DashboardClienteActivity : ComponentActivity() {
 
     private lateinit var repository: AppRepository
+    private lateinit var viewModel: OrdenTrabajoViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,18 +63,6 @@ class DashboardClienteActivity : ComponentActivity() {
             database.ordenTrabajoDao()
         )
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            val actuales = repository.obtenerOrdenes.first()
-            if (actuales.isEmpty()) {
-                val mockOrdenes = listOf(
-                    OrdenTrabajo("1", "Samsung Galaxy S22", "SN123", "En diagnostico", null, null, false, "10-10-2026"),
-                    OrdenTrabajo("2", "MacBook Pro M1", "SN456", "Pend. autorizacion", "Pantalla rota", 150000.0, true, "12-10-2026"),
-                    OrdenTrabajo("3", "iPhone 13", "SN789", "Listo", "Cambio de bateria", 45000.0, false, "15-10-2026")
-                )
-                mockOrdenes.forEach { repository.guardarOrden(it) }
-            }
-        }
-
         val factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -90,11 +74,10 @@ class DashboardClienteActivity : ComponentActivity() {
                 return OrdenTrabajoViewModel(repository) as T
             }
         }
-        val viewModel = ViewModelProvider(this, factory)[OrdenTrabajoViewModel::class.java]
-        viewModel.cargarEquiposDesdeApi()
+        viewModel = ViewModelProvider(this, factory)[OrdenTrabajoViewModel::class.java]
 
         setContent {
-            MCMovilCareTheme {
+            MCMovilCareTheme(darkTheme = true) {
                 val listaOrdenes by repository.obtenerOrdenes.collectAsState(initial = emptyList())
 
                 DashboardClienteScreenContent(
@@ -106,6 +89,13 @@ class DashboardClienteActivity : ComponentActivity() {
                     onCerrarSesion = { cerrarSesion() }
                 )
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::viewModel.isInitialized) {
+            viewModel.cargarEquiposDesdeApi()
         }
     }
 
@@ -148,35 +138,25 @@ fun DashboardClienteScreenContent(
     onEscanearQR: () -> Unit,
     onCerrarSesion: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (isDark) {
-            Image(
-                painter = painterResource(id = R.drawable.bg_dandadan),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.matchParentSize()
-            )
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(Color.Black.copy(alpha = 0.62f))
-            )
-        }
+    CyberBackground(isDashboard = true) {
         Scaffold(
-            containerColor = if (isDark) Color.Transparent else MaterialTheme.colorScheme.background,
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onBackground,
             topBar = {
                 TopAppBar(
                     title = {
                         Column {
                             Text(
                                 text = "Hola, Cliente",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontFamily = DigitalGhostFont,
+                                    fontWeight = FontWeight.Bold
+                                )
                             )
                             Text(
-                                text = "MCMovilCare Services",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "MCMovilCare // SECTION-9",
+                                style = MaterialTheme.typography.labelSmall.copy(fontFamily = DigitalGhostFont),
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     },
@@ -184,20 +164,29 @@ fun DashboardClienteScreenContent(
                         Button(
                             onClick = onEscanearQR,
                             shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.primary
+                            ),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Share,
                                 contentDescription = "Escanear QR",
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Escanear QR")
+                            Text(
+                                "Escanear QR",
+                                fontFamily = DigitalGhostFont,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = if (isDark) Color.Transparent else MaterialTheme.colorScheme.background
-                    )
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                 )
             }
         ) { paddingValues ->
@@ -215,11 +204,18 @@ fun DashboardClienteScreenContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Tus Órdenes de Trabajo",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        text = "Tus Ordenes de Trabajo",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = DigitalGhostFont,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                     TextButton(onClick = onCerrarSesion) {
-                        Text("Cerrar sesión", color = MaterialTheme.colorScheme.error)
+                        Text(
+                            "Cerrar sesion",
+                            fontFamily = DigitalGhostFont,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
                     }
                 }
 
@@ -228,7 +224,11 @@ fun DashboardClienteScreenContent(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        Text(
+                            text = "No tienes ordenes registradas",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = DigitalGhostFont),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 } else {
                     LazyColumn(
@@ -256,9 +256,10 @@ fun TarjetaOrdenItem(
     val formatoMoneda = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
 
     val (badgeBg, badgeFg) = when (orden.estado) {
-        "En diagnostico" -> Color(0xFFFFF3E0) to Color(0xFFE65100)
-        "Pend. autorizacion" -> Color(0xFFFFF8E1) to Color(0xFFF57F17)
-        "Listo" -> Color(0xFFE8F5E9) to Color(0xFF2E7D32)
+        "En diagnostico" -> Color(0xFF332200) to Color(0xFFFFB74D)
+        "Pend. autorizacion" -> Color(0xFF3B122B) to Color(0xFFFF4081)
+        "Aprobado", "Listo" -> Color(0xFF00332C) to Color(0xFF00E5FF)
+        "Rechazado" -> Color(0xFF3B1212) to Color(0xFFFF5252)
         else -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurfaceVariant
     }
 
@@ -267,14 +268,13 @@ fun TarjetaOrdenItem(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -299,12 +299,15 @@ fun TarjetaOrdenItem(
                     Column {
                         Text(
                             text = orden.equipoModelo,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = DigitalGhostFont,
+                                fontWeight = FontWeight.Bold
+                            )
                         )
                         Text(
                             text = "S/N: ${orden.numeroSerie}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = MaterialTheme.typography.labelSmall.copy(fontFamily = DigitalGhostFont),
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -316,14 +319,17 @@ fun TarjetaOrdenItem(
                     Text(
                         text = orden.estado,
                         color = badgeFg,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontFamily = DigitalGhostFont,
+                            fontWeight = FontWeight.Bold
+                        ),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(
@@ -332,8 +338,8 @@ fun TarjetaOrdenItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = orden.diagnostico ?: "Sin diagnóstico registrado aún",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = orden.diagnostico ?: "Sin diagnostico registrado aun",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = DigitalGhostFont),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
@@ -342,8 +348,9 @@ fun TarjetaOrdenItem(
                     Text(
                         text = formatoMoneda.format(orden.cotizacionMonto),
                         style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = DigitalGhostFont,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary
+                            color = MaterialTheme.colorScheme.primary
                         )
                     )
                 }

@@ -20,3 +20,9 @@ local.properties
 build/
 local.properties
 *.jks
+
+*.pem
+*.jks
+*.keystore
+*.apk
+app/release/

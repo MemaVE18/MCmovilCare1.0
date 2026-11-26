@@ -34,6 +34,7 @@ import androidx.room.Room
 import com.example.mcmovilcare.data.local.AppDatabase
 import com.example.mcmovilcare.model.Rol
 import com.example.mcmovilcare.model.Usuario
+import com.example.mcmovilcare.ui.components.CyberBackground
 import com.example.mcmovilcare.ui.theme.MCMovilCareTheme
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -45,6 +46,7 @@ import java.util.UUID
 class MainActivity : ComponentActivity() {
 
     private lateinit var db: AppDatabase
+    private var isLoadingState = mutableStateOf(false)
 
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -85,26 +87,13 @@ class MainActivity : ComponentActivity() {
     private fun mostrarPantallaLogin() {
         setContent {
             MCMovilCareTheme {
-                val isDark = isSystemInDarkTheme()
-                Box(modifier = Modifier.fillMaxSize()) {
-                    if (isDark) {
-                        Image(
-                            painter = painterResource(id = R.drawable.bg_dandadan),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.matchParentSize()
-                        )
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .background(Color.Black.copy(alpha = 0.62f))
-                        )
-                    }
+                CyberBackground(isDashboard = false) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = if (isDark) Color.Transparent else MaterialTheme.colorScheme.background
+                        color = Color.Transparent
                     ) {
                         LoginScreenContent(
+                            isLoading = isLoadingState.value,
                             onLoginClick = { email, pass -> procesarLogin(email, pass) },
                             onGoogleLoginClick = { iniciarLoginConGoogle() }
                         )
@@ -116,12 +105,12 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun LoginScreenContent(
+        isLoading: Boolean,
         onLoginClick: (String, String) -> Unit,
         onGoogleLoginClick: () -> Unit
     ) {
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
-        var isLoading by remember { mutableStateOf(false) }
 
         Column(
             modifier = Modifier
@@ -171,7 +160,7 @@ class MainActivity : ComponentActivity() {
                                 Toast.LENGTH_SHORT
                             ).show()
                         } else {
-                            isLoading = true
+                            isLoadingState.value = true
                             onLoginClick(email.trim().lowercase(), password)
                         }
                     },
@@ -232,15 +221,21 @@ class MainActivity : ComponentActivity() {
     private fun procesarLoginGoogle(emailGoogle: String, nombreGoogle: String) {
         lifecycleScope.launch(Dispatchers.IO) {
             val usuarioDao = db.usuarioDao()
+            var usuarioEnApi: Usuario? = null
             try {
                 val usuariosApi = RetrofitClient.apiService.obtenerUsuarios()
                 for (u in usuariosApi) {
-                    usuarioDao.insertarUsuario(u.copy(correo = u.correo.trim().lowercase()))
+                    val limpio = u.copy(correo = u.correo.trim().lowercase())
+                    usuarioDao.insertarUsuario(limpio)
+                    if (limpio.correo == emailGoogle) {
+                        usuarioEnApi = limpio
+                    }
                 }
             } catch (_: Exception) { }
 
-            val existente = usuarioDao.obtenerPorEmail(emailGoogle)
+            val existente = usuarioEnApi ?: usuarioDao.obtenerPorEmail(emailGoogle)
             val usuarioFinal: Usuario = if (existente != null) {
+                usuarioDao.insertarUsuario(existente)
                 existente
             } else {
                 val nuevoUsuario = Usuario(
@@ -279,17 +274,20 @@ class MainActivity : ComponentActivity() {
             }
 
             val usuario = usuarioDao.obtenerPorEmail(email)
+                ?: usuarioDao.obtenerPorEmail(email.replace("@duocuc.cl", "@duoc.cl"))
+                ?: usuarioDao.obtenerPorEmail(email.replace("@duoc.cl", "@duocuc.cl"))
 
             withContext(Dispatchers.Main) {
                 if (usuario != null && usuario.password == pass) {
+                    isLoadingState.value = false
                     redireccionarPorRol(usuario.rol.toString())
                 } else {
+                    isLoadingState.value = false
                     Toast.makeText(
                         this@MainActivity,
                         "Correo o contraseña incorrectos",
                         Toast.LENGTH_SHORT
                     ).show()
-                    mostrarPantallaLogin()
                 }
             }
         }
