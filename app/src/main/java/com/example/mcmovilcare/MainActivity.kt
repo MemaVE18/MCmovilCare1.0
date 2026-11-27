@@ -45,6 +45,7 @@ import java.util.UUID
 class MainActivity : ComponentActivity() {
 
     private lateinit var db: AppDatabase
+    private var isLoading by mutableStateOf(false)
 
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -121,7 +122,6 @@ class MainActivity : ComponentActivity() {
     ) {
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
-        var isLoading by remember { mutableStateOf(false) }
 
         Column(
             modifier = Modifier
@@ -267,29 +267,40 @@ class MainActivity : ComponentActivity() {
 
     private fun procesarLogin(email: String, pass: String) {
         lifecycleScope.launch(Dispatchers.IO) {
-            val usuarioDao = db.usuarioDao()
-
             try {
-                val usuariosApi = RetrofitClient.apiService.obtenerUsuarios()
-                for (u in usuariosApi) {
-                    usuarioDao.insertarUsuario(u.copy(correo = u.correo.trim().lowercase()))
+                val usuarioDao = db.usuarioDao()
+
+                try {
+                    val usuariosApi = RetrofitClient.apiService.obtenerUsuarios()
+                    for (u in usuariosApi) {
+                        usuarioDao.insertarUsuario(u.copy(correo = u.correo.trim().lowercase()))
+                    }
+                } catch (_: Exception) {
+                    // Si falla la red, valida contra lo que ya esté guardado en Room
+                }
+
+                val usuario = usuarioDao.obtenerPorEmail(email)
+
+                withContext(Dispatchers.Main) {
+                    isLoading = false
+                    if (usuario != null && usuario.password == pass) {
+                        redireccionarPorRol(usuario.rol.toString())
+                    } else {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Correo o contraseña incorrectos",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             } catch (_: Exception) {
-                // Si falla la red, valida contra lo que ya esté guardado en Room
-            }
-
-            val usuario = usuarioDao.obtenerPorEmail(email)
-
-            withContext(Dispatchers.Main) {
-                if (usuario != null && usuario.password == pass) {
-                    redireccionarPorRol(usuario.rol.toString())
-                } else {
+                withContext(Dispatchers.Main) {
+                    isLoading = false
                     Toast.makeText(
                         this@MainActivity,
                         "Correo o contraseña incorrectos",
                         Toast.LENGTH_SHORT
                     ).show()
-                    mostrarPantallaLogin()
                 }
             }
         }

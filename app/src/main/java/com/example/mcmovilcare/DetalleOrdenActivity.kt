@@ -38,7 +38,10 @@ class DetalleOrdenActivity : AppCompatActivity() {
             applicationContext,
             AppDatabase::class.java,
             "mcmovilcare_db"
-        ).fallbackToDestructiveMigration().build()
+        )
+            .enableMultiInstanceInvalidation()
+            .fallbackToDestructiveMigration()
+            .build()
 
         val repository = AppRepository(
             database.usuarioDao(),
@@ -136,6 +139,7 @@ class DetalleOrdenActivity : AppCompatActivity() {
             )
             Toast.makeText(this, "Cotizacion rechazada", Toast.LENGTH_SHORT).show()
         }
+
         when {
             estado.equals("Listo", ignoreCase = true) || estado.equals("Finalizado", ignoreCase = true) -> {
                 NotificacionHelper.enviarNotificacion(

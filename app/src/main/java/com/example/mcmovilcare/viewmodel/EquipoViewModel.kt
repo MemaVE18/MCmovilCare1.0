@@ -19,6 +19,9 @@ class EquipoViewModel(
     private val _uiState = MutableStateFlow(EquipoFormUiState())
     val uiState: StateFlow<EquipoFormUiState> = _uiState.asStateFlow()
 
+    private val _errorPersistencia = MutableStateFlow<String?>(null)
+    val errorPersistencia: StateFlow<String?> = _errorPersistencia.asStateFlow()
+
     fun onMarcaChanged(nuevaMarca: String) {
         _uiState.update { state ->
             val error = if (nuevaMarca.isBlank()) "La marca es requerida" else null
@@ -57,16 +60,22 @@ class EquipoViewModel(
         if (!currentState.esValido) return
 
         viewModelScope.launch {
-            val nuevoEquipo = Equipo(
-                id = UUID.randomUUID().toString(),
-                clienteId = clienteId,
-                marca = currentState.marca,
-                modelo = currentState.modelo,
-                numeroSerie = currentState.numeroSerie,
-                accesorios = "Sin accesorios"
-            )
-            repository.guardarEquipo(nuevoEquipo)
-            _uiState.update { it.copy(guardadoExitoso = true) }
+            _errorPersistencia.value = null
+            try {
+                val nuevoEquipo = Equipo(
+                    id = UUID.randomUUID().toString(),
+                    clienteId = clienteId,
+                    marca = currentState.marca.trim(),
+                    modelo = currentState.modelo.trim(),
+                    numeroSerie = currentState.numeroSerie.trim(),
+                    accesorios = "Sin accesorios"
+                )
+                repository.guardarEquipo(nuevoEquipo)
+                _uiState.update { it.copy(guardadoExitoso = true) }
+            } catch (e: Exception) {
+                _errorPersistencia.value = e.message ?: "Error al guardar equipo"
+                _uiState.update { it.copy(guardadoExitoso = false) }
+            }
         }
     }
 }

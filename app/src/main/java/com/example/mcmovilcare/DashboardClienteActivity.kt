@@ -47,6 +47,7 @@ import java.util.Locale
 class DashboardClienteActivity : ComponentActivity() {
 
     private lateinit var repository: AppRepository
+    private lateinit var viewModel: OrdenTrabajoViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,7 +91,7 @@ class DashboardClienteActivity : ComponentActivity() {
                 return OrdenTrabajoViewModel(repository) as T
             }
         }
-        val viewModel = ViewModelProvider(this, factory)[OrdenTrabajoViewModel::class.java]
+        viewModel = ViewModelProvider(this, factory)[OrdenTrabajoViewModel::class.java]
         viewModel.cargarEquiposDesdeApi()
 
         setContent {
@@ -106,6 +107,13 @@ class DashboardClienteActivity : ComponentActivity() {
                     onCerrarSesion = { cerrarSesion() }
                 )
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::viewModel.isInitialized) {
+            viewModel.cargarEquiposDesdeApi()
         }
     }
 
@@ -258,7 +266,7 @@ fun TarjetaOrdenItem(
     val (badgeBg, badgeFg) = when (orden.estado) {
         "En diagnostico" -> Color(0xFFFFF3E0) to Color(0xFFE65100)
         "Pend. autorizacion" -> Color(0xFFFFF8E1) to Color(0xFFF57F17)
-        "Listo" -> Color(0xFFE8F5E9) to Color(0xFF2E7D32)
+        "Listo", "Aprobado" -> Color(0xFFE8F5E9) to Color(0xFF2E7D32)
         else -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurfaceVariant
     }
 
@@ -280,7 +288,12 @@ fun TarjetaOrdenItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                ) {
                     Box(
                         modifier = Modifier
                             .size(38.dp)
@@ -316,6 +329,8 @@ fun TarjetaOrdenItem(
                     Text(
                         text = orden.estado,
                         color = badgeFg,
+                        maxLines = 1,
+                        softWrap = false,
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     )

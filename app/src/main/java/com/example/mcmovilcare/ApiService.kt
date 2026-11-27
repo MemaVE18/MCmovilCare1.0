@@ -30,11 +30,21 @@ interface ApiService {
 object RetrofitClient {
     private const val BASE_URL = "https://6af9d9cf6d8b86fb22d74b96.mockapi.io/"
 
-    val apiService: ApiService by lazy {
+    @Volatile
+    private var overrideService: ApiService? = null
+
+    private val defaultService: ApiService by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ApiService::class.java)
+    }
+
+    val apiService: ApiService
+        get() = overrideService ?: defaultService
+
+    fun setApiServiceForTesting(service: ApiService?) {
+        overrideService = service
     }
 }
