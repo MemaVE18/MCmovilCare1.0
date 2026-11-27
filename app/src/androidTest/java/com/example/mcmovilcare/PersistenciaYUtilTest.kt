@@ -1,15 +1,15 @@
 package com.example.mcmovilcare
 
-import android.os.Build
-import org.junit.Before
+import android.content.Context
 import android.content.Intent
-import androidx.test.core.app.ActivityScenario
+import android.os.Build
 import android.view.View
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.content.Context
 import androidx.room.Room
+import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -22,9 +22,11 @@ import com.example.mcmovilcare.util.NotificacionHelper
 import com.example.mcmovilcare.util.PdfGenerator
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -32,7 +34,15 @@ import org.junit.runner.RunWith
 class PersistenciaYUtilTest {
 
     @Before
-    fun concederPermisoNotificaciones() {
+    fun configurarEntorno() {
+        RetrofitClient.setApiServiceForTesting(object : ApiService {
+            override suspend fun obtenerOrdenes(): List<OrdenTrabajo> = emptyList()
+            override suspend fun crearOrden(orden: OrdenTrabajo): OrdenTrabajo = orden
+            override suspend fun actualizarOrden(id: String, orden: OrdenTrabajo): OrdenTrabajo = orden
+            override suspend fun obtenerUsuarios(): List<Usuario> = emptyList()
+            override suspend fun crearUsuario(usuario: Usuario): Usuario = usuario
+        })
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val instrumentation = InstrumentationRegistry.getInstrumentation()
             val packageName = instrumentation.targetContext.packageName
@@ -40,6 +50,11 @@ class PersistenciaYUtilTest {
                 "pm grant $packageName android.permission.POST_NOTIFICATIONS"
             ).close()
         }
+    }
+
+    @After
+    fun limpiarEntorno() {
+        RetrofitClient.setApiServiceForTesting(null)
     }
 
     private val ordenesPrueba = listOf(
@@ -126,5 +141,53 @@ class PersistenciaYUtilTest {
                 assertEquals(View.GONE, activity.findViewById<LinearLayout>(R.id.layoutAprobacion).visibility)
             }
         }
+    }
+
+    @Test
+    fun detalleOrdenActivity_muestra_estado_listo_sin_cotizacion_y_genera_pdf() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val intentListo = Intent(context, DetalleOrdenActivity::class.java).apply {
+            putExtra("EXTRA_ID", "3")
+            putExtra("EXTRA_EQUIPO", "iPhone 13")
+            putExtra("EXTRA_SERIE", "SN789")
+            putExtra("EXTRA_ESTADO", "Listo")
+            putExtra("EXTRA_AUTORIZADO", false)
+        }
+        ActivityScenario.launch<DetalleOrdenActivity>(intentListo).use { scenario ->
+            scenario.onActivity { activity ->
+                assertEquals("Costo: Pendiente de cotizacion", activity.findViewById<TextView>(R.id.tvDetalleCosto).text.toString())
+                assertEquals("Autorizado por el cliente: SI", activity.findViewById<TextView>(R.id.tvDetalleAutorizado).text.toString())
+                assertEquals(View.GONE, activity.findViewById<LinearLayout>(R.id.layoutAprobacion).visibility)
+                activity.findViewById<Button>(R.id.btnGenerarPdf).performClick()
+            }
+        }
+    }
+
+    @Test
+    fun ordenAdapter_vincula_datos_con_y_sin_monto_y_dispara_click() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val lista = listOf(
+            OrdenTrabajo("1", "Galaxy S22", "SN1", "En diagnostico", null, null, false, "10-10-2026"),
+            OrdenTrabajo("2", "iPad Air", "SN2", "Listo", "Bateria nueva", 55000.0, false, "11-10-2026")
+        )
+        var seleccionada: OrdenTrabajo? = null
+        val adapter = OrdenAdapter(lista) { seleccionada = it }
+
+        assertEquals(2, adapter.itemCount)
+
+        val parent = FrameLayout(context)
+        val vh0 = adapter.onCreateViewHolder(parent, 0)
+        adapter.onBindViewHolder(vh0, 0)
+        assertEquals("Galaxy S22", vh0.tvEquipo.text.toString())
+        assertEquals(View.GONE, vh0.tvMonto.visibility)
+
+        val vh1 = adapter.onCreateViewHolder(parent, 0)
+        adapter.onBindViewHolder(vh1, 1)
+        assertEquals("iPad Air", vh1.tvEquipo.text.toString())
+        assertEquals(View.VISIBLE, vh1.tvMonto.visibility)
+        assertEquals("$55000.0", vh1.tvMonto.text.toString())
+
+        vh1.itemView.performClick()
+        assertEquals("2", seleccionada?.id)
     }
 }

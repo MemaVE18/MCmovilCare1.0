@@ -2,25 +2,18 @@ package com.example.mcmovilcare
 
 import android.content.Context
 import android.content.Intent
-import androidx.compose.ui.test.performTextClearance
-import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.espresso.matcher.ViewMatchers.withText
-import org.hamcrest.Matchers.not
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.test.core.app.ActivityScenario
+import androidx.test.core.app.ApplicationProvider
 import com.example.mcmovilcare.model.OrdenTrabajo
 import com.example.mcmovilcare.model.Rol
 import com.example.mcmovilcare.model.Usuario
@@ -32,8 +25,10 @@ import com.example.mcmovilcare.ui.screens.NuevoEquipoScreen
 import com.example.mcmovilcare.ui.screens.ScanQrScreen
 import com.example.mcmovilcare.ui.screens.TecnicoDashboardScreen
 import com.example.mcmovilcare.ui.theme.MCMovilCareTheme
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
@@ -41,6 +36,22 @@ class UiFlujoUsuarioTest {
 
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Before
+    fun aislarRed() {
+        RetrofitClient.setApiServiceForTesting(object : ApiService {
+            override suspend fun obtenerOrdenes(): List<OrdenTrabajo> = emptyList()
+            override suspend fun crearOrden(orden: OrdenTrabajo): OrdenTrabajo = orden
+            override suspend fun actualizarOrden(id: String, orden: OrdenTrabajo): OrdenTrabajo = orden
+            override suspend fun obtenerUsuarios(): List<Usuario> = emptyList()
+            override suspend fun crearUsuario(usuario: Usuario): Usuario = usuario
+        })
+    }
+
+    @After
+    fun restaurarRed() {
+        RetrofitClient.setApiServiceForTesting(null)
+    }
 
     private val ordenesPrueba = listOf(
         OrdenTrabajo("1", "Samsung Galaxy S22", "SN123", "En diagnostico", null, null, false, "10-10-2026"),
